@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "convert-majors": "node ./utils/convertMajors.js"
+    "convert-chart-of-accounts": "node ./utils/convertChartOfAccounts.js"
   },
   "dependencies": {
     "react": "^19.1.1",
