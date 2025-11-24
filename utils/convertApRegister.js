@@ -158,6 +158,9 @@ CREATE TABLE LEDGER (
     INVOICE_NO VARCHAR(19) NOT NULL,
     INVOICE_DATE DATE NOT NULL,
     ACCOUNT_RE INT NOT NULL,
+    ACCOUNT_OL1 INT,
+    ACCOUNT_OL1_FUNC INT,
+    ACCOUNT_OL2 INT,
     ACCOUNT_FUND INT NOT NULL,
     ACCOUNT_DEPT INT NOT NULL,
     ACCOUNT_NO INT NOT NULL,
@@ -177,6 +180,16 @@ CREATE TABLE LEDGER (
       const netAmount = parseFloat(row[headers[7]]).toFixed(2);
       const accountNo = row[headers[5]].replace(/[-\s]+$/g, '').split('-').map(part => parseInt(part));
       const accountRE = parseInt(accountNo[0].toString().padStart(4, '0')[0]);
+      let ol1 = 'NULL';
+      let ol1Func = 'NULL';
+      let ol2 = 'NULL';
+      if (accountRE === 4) {
+        // Expenditures
+        const major = accountNo[1].toString().padStart(5, '0');
+        ol1 = major[0];
+        ol1Func = major[1];
+        ol2 = major[2];
+      }
       return `INSERT INTO LEDGER (
         PURCHASE_ORDER,
         VENDOR_NO,
@@ -184,6 +197,9 @@ CREATE TABLE LEDGER (
         INVOICE_NO,
         INVOICE_DATE,
         ACCOUNT_RE,
+        ACCOUNT_OL1,
+        ACCOUNT_OL1_FUNC,
+        ACCOUNT_OL2,
         ACCOUNT_FUND,
         ACCOUNT_DEPT,
         ACCOUNT_NO,
@@ -203,6 +219,9 @@ CREATE TABLE LEDGER (
         }-${invoiceDate[1].padStart(2, '0')
         }',
         ${accountRE},
+        ${ol1},
+        ${ol1Func},
+        ${ol2},
        ${accountNo[0]},
        ${accountNo[1]},
        ${accountNo[2]},
