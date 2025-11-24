@@ -1,6 +1,7 @@
-import { useMemo, useState, type ChangeEvent } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, Legend } from 'recharts';
+import { CoaLookup } from './CoaLookup';
 
 const colors = [
   "#3366CC",
@@ -26,20 +27,23 @@ const colors = [
 ];
 
 function App() {
-  const [coaReId, setCoaReId] = useState("-1");
+  const [re, setRe] = useState("-1");
+  const [ol1, setOl1] = useState("-1");
+  const [ol1Func, setOl1Func] = useState("-1");
+  const [ol2, setOl2] = useState("-1");
 
-  const coaRe = useQuery({
-    queryKey: ['coa_re'],
-    enabled: true,
-    queryFn: async () => {
-      const res = await fetch('/api/lookup-coa-re.php');
-      return res.json();
-    }
-  });
   const ff = useQuery({
-    queryKey: ['chartData', coaReId],
+    queryKey: ['chartData', re, ol1, ol1Func, ol2],
     queryFn: async () => {
-      const res = await fetch(`/api/year-over-year.php?re=${coaReId}`);
+      const params = new URLSearchParams({
+        re, ol1, ol1Func, ol2
+      });
+      if (params.get('re') === '-1') params.delete('re');
+      if (params.get('ol1') === '-1') params.delete('ol1');
+      if (params.get('ol1Func') === '-1') params.delete('ol1Func');
+      if (params.get('ol2') === '-1') params.delete('ol2');
+
+      const res = await fetch(`/api/year-over-year.php?${params.toString()}`);
       return res.json();
     }
   });
@@ -48,15 +52,7 @@ function App() {
     if (ff.isFetching) return;
     ff.refetch();
   }
-  const coaReOptions = useMemo(() => {
-    if (coaRe.isFetching) return <option>Fetching</option>;
-    if (coaRe.error) return <option>Error</option>;
-    if (!coaRe.data) return <option>No Data</option>;
-    const data: { id: string, name: string }[] = [{ id: "-1", name: "Any R/E" }, ...coaRe.data];
-    return data.map(({ id, name }) => (
-      <option value={id} key={id} selected={coaReId === id}>{name}</option>
-    ));
-  }, [coaRe.data, coaRe.error, coaRe.isFetching, coaReId])
+
   const prettyData = useMemo(() => {
     if (!ff.data) return null;
 
@@ -107,15 +103,13 @@ function App() {
     </div>
   }, [ff.data])
 
-  const changeCoaReId = (event: ChangeEvent<HTMLSelectElement>): void => {
-    const selectedId = event.currentTarget.selectedOptions[0].value;
-    setCoaReId(selectedId ?? "");
-  }
-
   return (
     <>
       <h1>General Ledger</h1>
-      <select onChange={changeCoaReId}>{coaReOptions}</select>
+      <CoaLookup name='re' value={re} onChange={setRe} />
+      <CoaLookup name='ol1' value={ol1} onChange={setOl1} />
+      <CoaLookup name='ol1Func' value={ol1Func} onChange={setOl1Func} />
+      <CoaLookup name='ol2' value={ol2} onChange={setOl2} />
       <button onClick={getData}>{ff.isFetching ? 'Loading...' : 'Get Data'}</button>
       {ff.error ? <b>{ff.error.message}</b> : null}
       {prettyData}

@@ -8,6 +8,21 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
+$id = $_GET['type'];
+$table = '';
+switch($id) {
+    case 're': $table = "COA_RE"; break;
+    case 'ol1': $table = "COA_OL1"; break;
+    case 'ol2': $table = "COA_OL2"; break;
+    case 'ol1Func': $table = "COA_FUNC"; break;
+    default: 
+      echo json_encode([
+        "error" => "Unknown type",
+        "details" => $conn->connect_error
+    ]);
+    exit;
+}
+
 $config = require "config.php";
 $db = $config["db"];
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -36,7 +51,7 @@ $sql = "SELECT
             ID as `id`,
             Name as `name`
         FROM
-            COA_RE
+            `$table`
         ORDER BY
             ID ASC
         LIMIT 100";
