@@ -48,7 +48,7 @@ $sql = "SELECT
             CHECK_DATE,
             DESCRIPTION,
             BATCH
-        FROM LEDGER LIMIT 100";
+        FROM LEDGER LIMIT 1000";
 $result = $conn->query($sql);
 
 if (!$result) {
