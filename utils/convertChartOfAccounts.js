@@ -8,7 +8,8 @@ async function convertFiles(folder) {
     for (const file of txtFiles) {
       const txtPath = join(folder, file);
       const jsonPath = join(folder, basename(file, '.txt') + '.json');
-      await convertFile(txtPath, jsonPath);
+      const csvPath = join(folder, basename(file, ".txt") + '.csv');
+      await convertFile(txtPath, jsonPath, csvPath);
     }
     console.log('done');
   } catch (err) {
@@ -16,7 +17,7 @@ async function convertFiles(folder) {
   }
 
 }
-async function convertFile(txtFile, jsonFile) {
+async function convertFile(txtFile, jsonFile, csvFile) {
   try {
     const text = await readFile(txtFile, 'utf8');
     const lines = text.trim().split('\n');
@@ -30,6 +31,9 @@ async function convertFile(txtFile, jsonFile) {
 
     await writeFile(jsonFile, JSON.stringify(hashtable, null, 2), 'utf8');
     console.log(`Created ${jsonFile} with ${Object.keys(hashtable).length} entries`);
+    const csv = "key,value\n" + Object.keys(hashtable).sort().map(key => `"${key}","${hashtable[key]}"`).join("\n");
+    await writeFile(csvFile, csv, 'utf8');
+    console.log(`Created ${csvF} with ${Object.keys(hashtable).length} entries`);
   } catch (err) {
     console.error('Error:', err.message);
   }

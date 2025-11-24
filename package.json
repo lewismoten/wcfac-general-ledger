@@ -9,10 +9,13 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "convert-chart-of-accounts": "node ./utils/convertChartOfAccounts.js"
+    "convert-chart-of-accounts": "node ./utils/convertChartOfAccounts.js",
+    "convert-ap-register": "node ./utils/convertApRegister.js"
   },
   "dependencies": {
     "csv-parse": "^6.1.0",
+    "csv-writer": "^1.6.0",
+    "install": "^0.13.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
