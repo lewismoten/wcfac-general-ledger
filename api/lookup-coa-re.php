@@ -8,8 +8,6 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
-$re = $_GET['re'];
-
 $config = require "config.php";
 $db = $config["db"];
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -34,29 +32,14 @@ if ($conn->connect_error) {
 }
 $conn->set_charset($db["charset"] ?? "utf8");
 
-$filter = '';
-if($re !== '' && $re !== null && is_numeric($re) && $re != '-1') {
-    $filter .= " AND COA_RE.ID = ".intval($re);
-}
-
 $sql = "SELECT 
-            CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name) AS `series`,
-            DATE_FORMAT(CHECK_DATE, '%M') AS `point`,
-            DATE_FORMAT(CHECK_DATE, '%m') AS `pointOrder`,
-            SUM(NET_AMOUNT) AS `value`
-        FROM LEDGER 
-        INNER JOIN COA_RE ON
-            LEDGER.ACCOUNT_RE = COA_RE.ID
-        WHERE
-            1=1
-            $filter
-        GROUP BY 
-            CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name),
-            DATE_FORMAT(CHECK_DATE, '%M')
+            ID as `id`,
+            Name as `name`
+        FROM
+            COA_RE
         ORDER BY
-            DATE_FORMAT(CHECK_DATE, '%m') ASC,
-            CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name) ASC
-        LIMIT 10000";
+            ID ASC
+        LIMIT 100";
 $result = $conn->query($sql);
 
 if (!$result) {

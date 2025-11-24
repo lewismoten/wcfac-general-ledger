@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, type ChangeEvent } from 'react'
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, Legend } from 'recharts';
 
@@ -26,22 +26,37 @@ const colors = [
 ];
 
 function App() {
-  const ff = useQuery({
-    queryKey: ['chartData'],
-    enabled: false,
-    staleTime: Infinity,
+  const [coaReId, setCoaReId] = useState("-1");
+
+  const coaRe = useQuery({
+    queryKey: ['coa_re'],
+    enabled: true,
     queryFn: async () => {
-      const res = await fetch('/api/year-over-year.php');
+      const res = await fetch('/api/lookup-coa-re.php');
+      return res.json();
+    }
+  });
+  const ff = useQuery({
+    queryKey: ['chartData', coaReId],
+    queryFn: async () => {
+      const res = await fetch(`/api/year-over-year.php?re=${coaReId}`);
       return res.json();
     }
   });
 
   const getData = () => {
     if (ff.isFetching) return;
-
     ff.refetch();
   }
-
+  const coaReOptions = useMemo(() => {
+    if (coaRe.isFetching) return <option>Fetching</option>;
+    if (coaRe.error) return <option>Error</option>;
+    if (!coaRe.data) return <option>No Data</option>;
+    const data: { id: string, name: string }[] = [{ id: "-1", name: "Any R/E" }, ...coaRe.data];
+    return data.map(({ id, name }) => (
+      <option value={id} key={id} selected={coaReId === id}>{name}</option>
+    ));
+  }, [coaRe.data, coaRe.error, coaRe.isFetching, coaReId])
   const prettyData = useMemo(() => {
     if (!ff.data) return null;
 
@@ -92,9 +107,15 @@ function App() {
     </div>
   }, [ff.data])
 
+  const changeCoaReId = (event: ChangeEvent<HTMLSelectElement>): void => {
+    const selectedId = event.currentTarget.selectedOptions[0].value;
+    setCoaReId(selectedId ?? "");
+  }
+
   return (
     <>
       <h1>General Ledger</h1>
+      <select onChange={changeCoaReId}>{coaReOptions}</select>
       <button onClick={getData}>{ff.isFetching ? 'Loading...' : 'Get Data'}</button>
       {ff.error ? <b>{ff.error.message}</b> : null}
       {prettyData}
