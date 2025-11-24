@@ -157,6 +157,7 @@ CREATE TABLE LEDGER (
     VENDOR_NAME VARCHAR(25) NOT NULL,
     INVOICE_NO VARCHAR(19) NOT NULL,
     INVOICE_DATE DATE NOT NULL,
+    ACCOUNT_RE INT NOT NULL,
     ACCOUNT_FUND INT NOT NULL,
     ACCOUNT_DEPT INT NOT NULL,
     ACCOUNT_NO INT NOT NULL,
@@ -175,12 +176,14 @@ CREATE TABLE LEDGER (
       const checkDate = row[headers[9]].split('/').map(part => parseInt(part, 10).toString(10));
       const netAmount = parseFloat(row[headers[7]]).toFixed(2);
       const accountNo = row[headers[5]].replace(/[-\s]+$/g, '').split('-').map(part => parseInt(part));
+      const accountRE = parseInt(accountNo[0].toString().padStart(4, '0')[0]);
       return `INSERT INTO LEDGER (
         PURCHASE_ORDER,
         VENDOR_NO,
         VENDOR_NAME,
         INVOICE_NO,
         INVOICE_DATE,
+        ACCOUNT_RE,
         ACCOUNT_FUND,
         ACCOUNT_DEPT,
         ACCOUNT_NO,
@@ -199,6 +202,7 @@ CREATE TABLE LEDGER (
         }-${invoiceDate[0].padStart(2, '0')
         }-${invoiceDate[1].padStart(2, '0')
         }',
+        ${accountRE},
        ${accountNo[0]},
        ${accountNo[1]},
        ${accountNo[2]},

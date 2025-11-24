@@ -33,17 +33,19 @@ if ($conn->connect_error) {
 $conn->set_charset($db["charset"] ?? "utf8");
 
 $sql = "SELECT 
-            DATE_FORMAT(CHECK_DATE, '%Y') AS `series`,
+            CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name) AS `series`,
             DATE_FORMAT(CHECK_DATE, '%M') AS `point`,
             DATE_FORMAT(CHECK_DATE, '%m') AS `pointOrder`,
             SUM(NET_AMOUNT) AS `value`
         FROM LEDGER 
+        INNER JOIN COA_RE ON
+            LEDGER.ACCOUNT_RE = COA_RE.ID
         GROUP BY 
-            DATE_FORMAT(CHECK_DATE, '%Y'),
+            CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name),
             DATE_FORMAT(CHECK_DATE, '%M')
         ORDER BY
             DATE_FORMAT(CHECK_DATE, '%m') ASC,
-            DATE_FORMAT(CHECK_DATE, '%Y') ASC
+            CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name) ASC
         LIMIT 10000";
 $result = $conn->query($sql);
 
