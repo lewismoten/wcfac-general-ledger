@@ -106,10 +106,10 @@ function App() {
   return (
     <>
       <h1>General Ledger</h1>
-      <CoaLookup name='re' value={re} onChange={setRe} />
-      <CoaLookup name='ol1' value={ol1} onChange={setOl1} />
-      <CoaLookup name='ol1Func' value={ol1Func} onChange={setOl1Func} />
-      <CoaLookup name='ol2' value={ol2} onChange={setOl2} />
+      <CoaLookup name='re' label="R/E" value={re} onChange={setRe} />
+      <CoaLookup name='ol1' label="OL1" visible={re === "-1" || re === "4"} value={ol1} onChange={setOl1} />
+      <CoaLookup name='ol1Func' label="Function" visible={re === "-1" || re === "4"} value={ol1Func} onChange={setOl1Func} />
+      <CoaLookup name='ol2' label="OL2" visible={re === "-1" || re === "4"} value={ol2} onChange={setOl2} />
       <button onClick={getData}>{ff.isFetching ? 'Loading...' : 'Get Data'}</button>
       {ff.error ? <b>{ff.error.message}</b> : null}
       {prettyData}
