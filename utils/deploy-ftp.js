@@ -7,13 +7,10 @@ import ftp from "basic-ftp";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const DIST_DIR = join(__dirname, "..", "dist");
-
-async function uploadDirectory(client, localDir, remoteDir) {
-  await client.ensureDir(remoteDir);
-  await client.clearWorkingDir();
-  await client.uploadFromDir(localDir);
-}
+const ROOT_DIR = join(__dirname, "..");
+const DIST_DIR = join(ROOT_DIR, "dist");
+const API_DIR = join(ROOT_DIR, "api");
+const CONFIG_FILE = join(ROOT_DIR, "config.php");
 
 (async () => {
   const json = await readFile('config.json', 'utf8');
@@ -47,8 +44,22 @@ async function uploadDirectory(client, localDir, remoteDir) {
       console.error(`Build directory "${DIST_DIR}" not found.`);
       process.exit(1);
     }
+    console.log('uploading front-end');
+    await client.ensureDir(remoteDir);
+    await client.cd(remoteDir);
+    await client.uploadFromDir(DIST_DIR);
 
-    await uploadDirectory(client, DIST_DIR, remoteDir);
+    console.log('uploading back-end');
+    const remoteApiDir = `${remoteDir}/api`;
+    await client.ensureDir(remoteApiDir);
+    await client.cd(remoteApiDir);
+    await client.uploadFromDir(API_DIR);
+
+    if (existsSync(CONFIG_FILE)) {
+      console.log('uploading back-end configuration');
+      await client.uploadFrom(CONFIG_FILE, `config.php`);
+    }
+
     console.log("✅ FTP upload complete!");
   } catch (err) {
     console.error("❌ FTP upload failed:", err);
