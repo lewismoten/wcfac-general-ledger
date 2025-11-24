@@ -72,11 +72,18 @@ function App() {
 
     }
     chartData.sort((x1, x2) => x1.pointOrder < x2.pointOrder ? 1 : x1.pointOrder > x2.pointOrder ? -1 : 0);
+    const formatTickY = (value: any): string =>
+      (value * 0.000001).toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 1,
+      }) + 'M';
+
     // <pre>{JSON.stringify(chartData, null, '  ')}</pre>
     return <div>
       <LineChart width={800} height={400} data={chartData}>
         <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
-        <YAxis />
+        <YAxis tickFormatter={formatTickY} />
         <Legend />
         {
           seriesNames.map((series, idx) =>
