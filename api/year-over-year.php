@@ -16,6 +16,10 @@ $ol2 = $_GET['ol2'];
 $dept = $_GET['dept'];
 $acct = $_GET['acct'];
 $vend = $_GET['vend'];
+$inv = $_GET['inv'];
+$inv1 = $_GET['inv1'];
+$inv2 = $_GET['inv2'];
+$inv3 = $_GET['inv3'];
 
 $config = require "config.php";
 $db = $config["db"];
@@ -58,6 +62,9 @@ function is_filtered_multi($values) {
     return true;
 }
 
+$types = '';
+$params = [];
+
 if(is_filtered_multi($fy)) {
     $filter .= " AND CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%Y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%Y') END IN($fy)";
 }
@@ -84,12 +91,33 @@ if(is_filtered($acct)) {
 if(is_filtered($vend)) {
     $filter .= " AND LEDGER.VENDOR_ID = ".intval($vend);
 }
+if(is_filtered($inv)) {
+    $filter .= " AND LEDGER.INVOICE_NO = ?";
+    $types .= 's';
+    $params[] = $inv;
+}
+if(is_filtered($inv1)) {
+    $filter .= " AND LEDGER.INVOICE_NO_1 = ?";
+    $types .= 's';
+    $params[] = $inv1;
+}
+if(is_filtered($inv2)) {
+    $filter .= " AND LEDGER.INVOICE_NO_2 = ?";
+    $types .= 's';
+    $params[] = $inv2;
+}
+if(is_filtered($inv3)) {
+    $filter .= " AND LEDGER.INVOICE_NO_3 = ?";
+    $types .= 's';
+    $params[] = $inv3;
+}
+
 if($filter != '') {
     $filter = "WHERE 1=1 $filter";
 }
 
-$sql = "SELECT 
-            CONCAT('FY', CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%y') END, ' ', COA_RE.Name) AS `series`,
+$stmt = $conn->prepare("SELECT 
+            CONCAT('FY', CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END, ' ', COA_RE.Name) AS `series`,
             DATE_FORMAT(CHECK_DATE, '%M') AS `point`,
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END AS `pointOrder`,
             SUM(NET_AMOUNT) AS `value`
@@ -101,17 +129,36 @@ $sql = "SELECT
             CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name),
             DATE_FORMAT(CHECK_DATE, '%M')
         ORDER BY
-            CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 6 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END ASC,
-            CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%y') END,
+            CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END ASC,
+            CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END,
             CONCAT('', COA_RE.Name) ASC
-        LIMIT 10000";
-$result = $conn->query($sql);
+        LIMIT 10000");
+
+if(!$stmt) {
+  echo json_encode([
+      "error" => "Prepare statement failed",
+      "details" => $conn->error
+  ]);
+    exit;
+}
+
+if ($types !== '') {
+    $stmt->bind_param($types, ...$params);
+}
+
+if(!$stmt->execute()) {
+  echo json_encode([
+      "error" => "Query execution failed",
+      "details" => $conn->error
+  ]);
+    exit;
+}
+$result = $stmt->get_result();
 
 if (!$result) {
-//   http_response_code(500);
   echo json_encode([
-      "error" => "Query failed",
-      "details" => $conn->error
+      "error" => "Get results failed",
+      "details" => $stmt->error
   ]);
   exit;
 }
