@@ -42,9 +42,21 @@ $filter = '';
 function is_filtered($value) {
    return $value  !== '' && $value !== null && is_numeric($value) && $value != '-1';
 }
+function is_filtered_multi($values) {
+   if($values  == '' || $values == null || $value == '-1') return false;
+   if(is_numeric($value)) return true;
+   $parts = explode(',', $values);
+    foreach ($parts as $p) {
+        $p = trim($p);
+        if ($p === '' || !is_numeric($p)) {
+            return false;
+        }
+    }
+    return true;
+}
 
-if(is_filtered($fy)) {
-    $filter .= " AND CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%Y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%Y') END = ".intval($fy);
+if(is_filtered_multi($fy)) {
+    $filter .= " AND CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%Y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%Y') END IN($fy)";
 }
 if(is_filtered($re)) {
     $filter .= " AND LEDGER.ACCOUNT_RE = ".intval($re);

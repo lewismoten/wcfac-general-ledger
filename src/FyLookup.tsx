@@ -1,7 +1,7 @@
 import { useCallback, useMemo, type ChangeEvent, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query';
 
-export const FyLookup = ({ name, value = "-1", onChange, visible = true, label }: { label: string, name: string, value: string, onChange: (id: string) => void, visible?: boolean }): ReactNode => {
+export const FyLookup = ({ name, values = ["-1"], onChange, visible = true, label }: { label: string, name: string, values: string[], onChange: (id: string[]) => void, visible?: boolean }): ReactNode => {
 
   const { isFetching, error, data } = useQuery({
     queryKey: [`coa_${name}`],
@@ -17,16 +17,19 @@ export const FyLookup = ({ name, value = "-1", onChange, visible = true, label }
     if (error) return <option>Error</option>;
     if (!data) return <option>No Data</option>;
     return [{ id: "-1", name: "All" }, ...data].map(({ id, name }) => (
-      <option value={id} key={id} selected={value === id}>{name}</option>
+      <option value={id} key={id} selected={values.includes(id)}>{name}</option>
     ));
-  }, [data, error, isFetching, value])
+  }, [data, error, isFetching, values])
 
   const changeSelected = useCallback((event: ChangeEvent<HTMLSelectElement>): void => {
-    const selectedValue = event.currentTarget.selectedOptions[0].value ?? value;
-    if (selectedValue !== value)
-      onChange(selectedValue);
-  }, [onChange, value]);
+    let selectedValues = [...event.currentTarget.selectedOptions].map(({ value }) => value);
+    if (selectedValues.length > 1 && selectedValues.includes("-1")) {
+      selectedValues = selectedValues.filter(value => value !== "-1");
+    }
+    if (selectedValues.join(",") !== values.join(","))
+      onChange(selectedValues);
+  }, [onChange, values]);
 
-  return visible ? <div>{label}<select onChange={changeSelected}>{options}</select></div> : null;
+  return visible ? <div>{label}<select multiple onChange={changeSelected}>{options}</select></div> : null;
 
 }

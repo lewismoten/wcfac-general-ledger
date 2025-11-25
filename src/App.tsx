@@ -28,7 +28,7 @@ const colors = [
 ];
 
 function App() {
-  const [fy, setFy] = useState("-1");
+  const [fy, setFy] = useState(["-1"]);
   const [re, setRe] = useState("-1");
   const [ol1, setOl1] = useState("-1");
   const [ol1Func, setOl1Func] = useState("-1");
@@ -39,7 +39,8 @@ function App() {
     placeholderData: keepPreviousData,
     queryFn: async () => {
       const params = new URLSearchParams({
-        fy, re, ol1, ol1Func, ol2
+        fy: fy.join(","),
+        re, ol1, ol1Func, ol2
       });
       if (params.get('fy') === '-1') params.delete('fy');
       if (params.get('re') === '-1') params.delete('re');
@@ -141,7 +142,7 @@ function App() {
   return (
     <>
       <h1>General Ledger</h1>
-      <FyLookup name='fy' label="Fiscal Year" value={fy} onChange={setFy} />
+      <FyLookup name='fy' label="Fiscal Year" values={fy} onChange={setFy} />
       <CoaLookup name='re' label="R/E" value={re} onChange={setRe} />
       <CoaLookup name='ol1' label="OL1" visible={re === "-1" || re === "4"} value={ol1} onChange={setOl1} />
       <CoaLookup name='ol1Func' label="Function" visible={re === "-1" || re === "4"} value={ol1Func} onChange={setOl1Func} />
