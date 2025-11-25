@@ -3,6 +3,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, Legend } from 'recharts';
 import { CoaLookup } from './CoaLookup';
 import { FyLookup } from './FyLookup';
+import { InvoiceLookup } from './InvoiceLookup';
 
 const colors = [
   "#3366CC",
@@ -36,9 +37,13 @@ function App() {
   const [dept, setDept] = useState("-1");
   const [acct, setAcct] = useState("-1");
   const [vend, setVend] = useState("-1");
+  const [inv, setInv] = useState("-1");
+  const [inv1, setInv1] = useState("-1");
+  const [inv2, setInv2] = useState("-1");
+  const [inv3, setInv3] = useState("-1");
 
   const { isFetching, data, error } = useQuery<{ series: string, point: string, value: number, pointOrder: number }[]>({
-    queryKey: ['chartData', fy, re, ol1, ol1Func, ol2, dept, acct, vend],
+    queryKey: ['chartData', fy, re, ol1, ol1Func, ol2, dept, acct, vend, inv, inv1, inv2, inv3],
     placeholderData: keepPreviousData,
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -46,7 +51,8 @@ function App() {
         re,
         ol1, ol1Func, ol2, dept,
         acct,
-        vend
+        vend,
+        inv, inv1, inv2, inv3
       });
       if (params.get('fy') === '-1') params.delete('fy');
       if (params.get('re') !== '4' && params.get('re') !== '-1') {
@@ -64,6 +70,10 @@ function App() {
       if (params.get('acct') === '-1') params.delete('acct');
       if (params.get('vend') === '-1') params.delete('vend');
 
+      if (params.get('inv') === '-1') params.delete('inv');
+      if (params.get('inv1') === '-1') params.delete('inv1');
+      if (params.get('inv2') === '-1') params.delete('inv2');
+      if (params.get('inv3') === '-1') params.delete('inv3');
       const res = await fetch(`/api/year-over-year.php?${params.toString()}`);
       return res.json().then(data => data.map(({ series, point, value, pointOrder }: { series: string, point: string, value: string, pointOrder: string }) => ({
         series,
@@ -161,6 +171,10 @@ function App() {
       <CoaLookup name='dept' label="Department" visible={re === "-1" || re === "4"} value={dept} onChange={setDept} />
       <CoaLookup name='acct' label="Account" visible value={acct} onChange={setAcct} />
       <CoaLookup name='vend' label="Vendor" visible value={vend} onChange={setVend} />
+      <InvoiceLookup level="-1" label="Invoice" visible value={inv} onChange={setInv} />
+      <InvoiceLookup level="1" label="Invoice[1]" visible value={inv1} onChange={setInv1} />
+      <InvoiceLookup level="2" label="Invoice[2]" visible value={inv2} onChange={setInv2} />
+      <InvoiceLookup level="3" label="Invoice[3]" visible value={inv3} onChange={setInv3} />
       {error ? <b>{error.message}</b> : null}
       {prettyData}
       {isFetching ? 'Loading...' : 'Ready'}
