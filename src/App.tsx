@@ -35,16 +35,18 @@ function App() {
   const [ol2, setOl2] = useState("-1");
   const [dept, setDept] = useState("-1");
   const [acct, setAcct] = useState("-1");
+  const [vend, setVend] = useState("-1");
 
   const { isFetching, data, error } = useQuery<{ series: string, point: string, value: number, pointOrder: number }[]>({
-    queryKey: ['chartData', fy, re, ol1, ol1Func, ol2, dept, acct],
+    queryKey: ['chartData', fy, re, ol1, ol1Func, ol2, dept, acct, vend],
     placeholderData: keepPreviousData,
     queryFn: async () => {
       const params = new URLSearchParams({
         fy: fy.join(","),
         re,
         ol1, ol1Func, ol2, dept,
-        acct
+        acct,
+        vend
       });
       if (params.get('fy') === '-1') params.delete('fy');
       if (params.get('re') !== '4' && params.get('re') !== '-1') {
@@ -60,6 +62,7 @@ function App() {
       }
       if (params.get('re') === '-1') params.delete('re');
       if (params.get('acct') === '-1') params.delete('acct');
+      if (params.get('vend') === '-1') params.delete('vend');
 
       const res = await fetch(`/api/year-over-year.php?${params.toString()}`);
       return res.json().then(data => data.map(({ series, point, value, pointOrder }: { series: string, point: string, value: string, pointOrder: string }) => ({
@@ -157,6 +160,7 @@ function App() {
       <CoaLookup name='ol2' label="OL2" visible={re === "-1" || re === "4"} value={ol2} onChange={setOl2} />
       <CoaLookup name='dept' label="Department" visible={re === "-1" || re === "4"} value={dept} onChange={setDept} />
       <CoaLookup name='acct' label="Account" visible value={acct} onChange={setAcct} />
+      <CoaLookup name='vend' label="Vendor" visible value={vend} onChange={setVend} />
       {error ? <b>{error.message}</b> : null}
       {prettyData}
       {isFetching ? 'Loading...' : 'Ready'}

@@ -10,35 +10,43 @@ header("Access-Control-Allow-Headers: Content-Type");
 
 $id = $_GET['type'];
 $table = '';
-$pad = 1;
 $fk = '';
 
 switch($id) {
     case 're': 
         $table = "COA_RE"; 
         $fk = 'ACCOUNT_RE';
+        $name = "CONCAT(LPAD(`$table`.ID, 1, '0'), ': ', Name)";
         break;
     case 'ol1': 
         $table = "COA_OL1";
         $fk = 'ACCOUNT_OL1';
+        $name = "CONCAT(LPAD(`$table`.ID, 1, '0'), ': ', Name)";
          break;
     case 'ol2': 
         $table = "COA_OL2"; 
         $fk = 'ACCOUNT_OL2';
+        $name = "CONCAT(LPAD(`$table`.ID, 1, '0'), ': ', Name)";
         break;
     case 'ol1Func': 
         $table = "COA_FUNC"; 
         $fk = 'ACCOUNT_OL1_FUNC';
+        $name = "CONCAT(LPAD(`$table`.ID, 1, '0'), ': ', Name)";
     break;
     case 'dept': 
         $table = "COA_DEPT"; 
         $fk = 'ACCOUNT_DEPT';
-        $pad = 6;
+        $name = "CONCAT(LPAD(`$table`.ID, 6, '0'), ': ', Name)";
         break;
     case 'acct': 
         $table = "COA_ACCT"; 
         $fk = 'ACCOUNT_NO';
-        $pad = 4;
+        $name = "CONCAT(LPAD(`$table`.ID, 5, '0'), ': ', Name)";
+        break;
+    case 'vend': 
+        $table = "VENDOR"; 
+        $fk = 'VENDOR_ID';
+        $name = "CONCAT(LPAD(`$table`.Num, 6, '0'), ': ', Name)";
         break;
     default: 
       echo json_encode([
@@ -74,7 +82,7 @@ $conn->set_charset($db["charset"] ?? "utf8");
 
 $sql = "SELECT DISTINCT
             `$table`.ID as `id`,
-            CONCAT(LPAD(`$table`.ID, $pad, '0'), ': ', Name) as `name`
+            $name as `name`
         FROM
             `$table`
             INNER JOIN LEDGER WHERE LEDGER.`$fk` = `$table`.ID

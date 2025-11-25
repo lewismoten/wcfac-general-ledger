@@ -15,6 +15,7 @@ $ol1Func = $_GET['ol1Func'];
 $ol2 = $_GET['ol2'];
 $dept = $_GET['dept'];
 $acct = $_GET['acct'];
+$vend = $_GET['vend'];
 
 $config = require "config.php";
 $db = $config["db"];
@@ -79,6 +80,9 @@ if((is_filtered($re) && $re === '4') || !is_filtered($re)) {
 }
 if(is_filtered($acct)) {
     $filter .= " AND LEDGER.ACCOUNT_NO = ".intval($acct);
+}
+if(is_filtered($vend)) {
+    $filter .= " AND LEDGER.VENDOR_ID = ".intval($vend);
 }
 if($filter != '') {
     $filter = "WHERE 1=1 $filter";
