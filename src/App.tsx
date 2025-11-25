@@ -5,6 +5,7 @@ import { CoaLookup } from './CoaLookup';
 import { FyLookup } from './FyLookup';
 import { InvoiceLookup } from './InvoiceLookup';
 
+
 const colors = [
   "#3366CC",
   "#DC3912",
@@ -42,39 +43,43 @@ function App() {
   const [inv2, setInv2] = useState("-1");
   const [inv3, setInv3] = useState("-1");
 
+  const searchParams = useMemo(() => {
+    const params = new URLSearchParams({
+      fy: fy.join(","),
+      re,
+      ol1, ol1Func, ol2, dept,
+      acct,
+      vend,
+      inv, inv1, inv2, inv3
+    });
+    if (params.get('fy') === '-1') params.delete('fy');
+    if (params.get('re') !== '4' && params.get('re') !== '-1') {
+      params.delete('ol1');
+      params.delete('ol1Func');
+      params.delete('ol2');
+      params.delete('dept');
+    } else {
+      if (params.get('ol1') === '-1') params.delete('ol1');
+      if (params.get('ol1Func') === '-1') params.delete('ol1Func');
+      if (params.get('ol2') === '-1') params.delete('ol2');
+      if (params.get('dept') === '-1') params.delete('dept');
+    }
+    if (params.get('re') === '-1') params.delete('re');
+    if (params.get('acct') === '-1') params.delete('acct');
+    if (params.get('vend') === '-1') params.delete('vend');
+
+    if (params.get('inv') === '-1') params.delete('inv');
+    if (params.get('inv1') === '-1') params.delete('inv1');
+    if (params.get('inv2') === '-1') params.delete('inv2');
+    if (params.get('inv3') === '-1') params.delete('inv3');
+    return params.toString();
+  }, [fy, re, ol1, ol1Func, ol2, dept, acct, vend, inv, inv1, inv2, inv3])
   const { isFetching, data, error } = useQuery<{ series: string, point: string, value: number, pointOrder: number }[]>({
-    queryKey: ['chartData', fy, re, ol1, ol1Func, ol2, dept, acct, vend, inv, inv1, inv2, inv3],
+    queryKey: ['chartData', searchParams],
     placeholderData: keepPreviousData,
     queryFn: async () => {
-      const params = new URLSearchParams({
-        fy: fy.join(","),
-        re,
-        ol1, ol1Func, ol2, dept,
-        acct,
-        vend,
-        inv, inv1, inv2, inv3
-      });
-      if (params.get('fy') === '-1') params.delete('fy');
-      if (params.get('re') !== '4' && params.get('re') !== '-1') {
-        params.delete('ol1');
-        params.delete('ol1Func');
-        params.delete('ol2');
-        params.delete('dept');
-      } else {
-        if (params.get('ol1') === '-1') params.delete('ol1');
-        if (params.get('ol1Func') === '-1') params.delete('ol1Func');
-        if (params.get('ol2') === '-1') params.delete('ol2');
-        if (params.get('dept') === '-1') params.delete('dept');
-      }
-      if (params.get('re') === '-1') params.delete('re');
-      if (params.get('acct') === '-1') params.delete('acct');
-      if (params.get('vend') === '-1') params.delete('vend');
 
-      if (params.get('inv') === '-1') params.delete('inv');
-      if (params.get('inv1') === '-1') params.delete('inv1');
-      if (params.get('inv2') === '-1') params.delete('inv2');
-      if (params.get('inv3') === '-1') params.delete('inv3');
-      const res = await fetch(`/api/year-over-year.php?${params.toString()}`);
+      const res = await fetch(`/api/year-over-year.php?${searchParams}`);
       return res.json().then(data => data.map(({ series, point, value, pointOrder }: { series: string, point: string, value: string, pointOrder: string }) => ({
         series,
         point,
@@ -164,17 +169,17 @@ function App() {
     <>
       <h1>General Ledger</h1>
       <FyLookup name='fy' label="Fiscal Year" values={fy} onChange={setFy} />
-      <CoaLookup name='re' label="R/E" value={re} onChange={setRe} />
-      <CoaLookup name='ol1' label="OL1" visible={re === "-1" || re === "4"} value={ol1} onChange={setOl1} />
-      <CoaLookup name='ol1Func' label="Function" visible={re === "-1" || re === "4"} value={ol1Func} onChange={setOl1Func} />
-      <CoaLookup name='ol2' label="OL2" visible={re === "-1" || re === "4"} value={ol2} onChange={setOl2} />
-      <CoaLookup name='dept' label="Department" visible={re === "-1" || re === "4"} value={dept} onChange={setDept} />
-      <CoaLookup name='acct' label="Account" visible value={acct} onChange={setAcct} />
-      <CoaLookup name='vend' label="Vendor" visible value={vend} onChange={setVend} />
-      <InvoiceLookup level="-1" label="Invoice" visible value={inv} onChange={setInv} />
-      <InvoiceLookup level="1" label="Invoice[1]" visible value={inv1} onChange={setInv1} />
-      <InvoiceLookup level="2" label="Invoice[2]" visible value={inv2} onChange={setInv2} />
-      <InvoiceLookup level="3" label="Invoice[3]" visible value={inv3} onChange={setInv3} />
+      <CoaLookup name='re' label="R/E" value={re} onChange={setRe} searchParams={searchParams} />
+      <CoaLookup name='ol1' label="OL1" visible={re === "-1" || re === "4"} value={ol1} onChange={setOl1} searchParams={searchParams} />
+      <CoaLookup name='ol1Func' label="Function" visible={re === "-1" || re === "4"} value={ol1Func} onChange={setOl1Func} searchParams={searchParams} />
+      <CoaLookup name='ol2' label="OL2" visible={re === "-1" || re === "4"} value={ol2} onChange={setOl2} searchParams={searchParams} />
+      <CoaLookup name='dept' label="Department" visible={re === "-1" || re === "4"} value={dept} onChange={setDept} searchParams={searchParams} />
+      <CoaLookup name='acct' label="Account" visible value={acct} onChange={setAcct} searchParams={searchParams} />
+      <CoaLookup name='vend' label="Vendor" visible value={vend} onChange={setVend} searchParams={searchParams} />
+      <InvoiceLookup level="1" label="Invoice[1]" visible value={inv1} onChange={setInv1} searchParams={searchParams} />
+      <InvoiceLookup level="2" label="Invoice[2]" visible value={inv2} onChange={setInv2} searchParams={searchParams} />
+      <InvoiceLookup level="3" label="Invoice[3]" visible value={inv3} onChange={setInv3} searchParams={searchParams} />
+      <InvoiceLookup level="-1" label="Invoice" visible value={inv} onChange={setInv} searchParams={searchParams} />
       {error ? <b>{error.message}</b> : null}
       {prettyData}
       {isFetching ? 'Loading...' : 'Ready'}

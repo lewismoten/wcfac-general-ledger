@@ -1,13 +1,28 @@
 import { useCallback, useMemo, type ChangeEvent, type ReactNode } from 'react'
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { drillDownLevels } from './utils';
 
-export const InvoiceLookup = ({ level, value = "-1", onChange, visible = true, label }: { label: string, level: string, value: string, onChange: (id: string) => void, visible?: boolean }): ReactNode => {
+export const InvoiceLookup = ({ level, value = "-1", onChange, visible = true, label, searchParams }: { label: string, level: string, value: string, onChange: (id: string) => void, visible?: boolean, searchParams: string }): ReactNode => {
+
+  const params = useMemo(() => {
+    const params = new URLSearchParams(searchParams);
+    const idx = drillDownLevels.indexOf(`inv${level === "-1" ? "" : level}`);
+    if (idx !== -1) {
+      for (let i = idx; i < drillDownLevels.length; i++) {
+        if (params.has(drillDownLevels[i])) {
+          params.delete(drillDownLevels[i]);
+        }
+      }
+    }
+    return params.toString();
+  }, [searchParams]);
 
   const { isFetching, error, data } = useQuery({
-    queryKey: [`invoice`, level],
+    queryKey: [`invoice`, level, params],
     enabled: true,
+    placeholderData: keepPreviousData,
     queryFn: async () => {
-      const res = await fetch(`/api/lookup-invoice.php?level=${level}`);
+      const res = await fetch(`/api/lookup-invoice.php?level=${level}&${params}`);
       return res.json();
     }
   });

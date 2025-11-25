@@ -1,13 +1,27 @@
 import { useCallback, useMemo, type ChangeEvent, type ReactNode } from 'react'
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { drillDownLevels } from './utils';
+export const CoaLookup = ({ name, value = "-1", onChange, visible = true, label, searchParams = "" }: { label: string, name: string, value: string, onChange: (id: string) => void, visible?: boolean, searchParams: string }): ReactNode => {
 
-export const CoaLookup = ({ name, value = "-1", onChange, visible = true, label }: { label: string, name: string, value: string, onChange: (id: string) => void, visible?: boolean }): ReactNode => {
-
+  const params = useMemo(() => {
+    const params = new URLSearchParams(searchParams);
+    const idx = drillDownLevels.indexOf(name);
+    if (idx !== -1) {
+      for (let i = idx; i < drillDownLevels.length; i++) {
+        if (params.has(drillDownLevels[i])) {
+          params.delete(drillDownLevels[i]);
+        }
+      }
+    }
+    return params.toString();
+  }, [searchParams]);
   const { isFetching, error, data } = useQuery({
-    queryKey: [`coa_${name}`],
+    queryKey: ['coa', name, params],
+    placeholderData: keepPreviousData,
     enabled: true,
     queryFn: async () => {
-      const res = await fetch(`/api/lookup-coa.php?type=${name}`);
+
+      const res = await fetch(`/api/lookup-coa.php?type=${name}&${params}`);
       return res.json();
     }
   });
