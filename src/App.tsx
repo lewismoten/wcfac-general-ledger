@@ -96,7 +96,7 @@ function App() {
       }
 
     }
-    chartData.sort((x1, x2) => x1.pointOrder < x2.pointOrder ? 1 : x1.pointOrder > x2.pointOrder ? -1 : 0);
+    chartData.sort((x1, x2) => x1.sort > x2.sort ? 1 : x1.sort < x2.sort ? -1 : 0);
 
     let multiplier = 1;
     let unit = '';

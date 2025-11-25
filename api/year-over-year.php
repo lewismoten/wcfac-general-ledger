@@ -59,7 +59,7 @@ if($filter != '') {
 $sql = "SELECT 
             CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name) AS `series`,
             DATE_FORMAT(CHECK_DATE, '%M') AS `point`,
-            DATE_FORMAT(CHECK_DATE, '%m') AS `pointOrder`,
+            CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END AS `pointOrder`,
             SUM(NET_AMOUNT) AS `value`
         FROM LEDGER 
         INNER JOIN COA_RE ON
@@ -69,7 +69,7 @@ $sql = "SELECT
             CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name),
             DATE_FORMAT(CHECK_DATE, '%M')
         ORDER BY
-            DATE_FORMAT(CHECK_DATE, '%m') ASC,
+            CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 6 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END ASC,
             CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name) ASC
         LIMIT 10000";
 $result = $conn->query($sql);
