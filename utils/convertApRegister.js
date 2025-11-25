@@ -155,7 +155,10 @@ CREATE TABLE LEDGER (
     PURCHASE_ORDER INT NOT NULL,
     VENDOR_NO INT NOT NULL,
     VENDOR_NAME VARCHAR(25) NOT NULL,
-    INVOICE_NO VARCHAR(19) NOT NULL,
+    INVOICE_NO VARCHAR(19) NULL,
+    INVOICE_NO_1 VARCHAR(19) NULL,
+    INVOICE_NO_2 VARCHAR(17) NULL,
+    INVOICE_NO_3 VARCHAR(15) NULL,
     INVOICE_DATE DATE NOT NULL,
     ACCOUNT_RE INT NOT NULL,
     ACCOUNT_OL1 INT,
@@ -179,6 +182,7 @@ CREATE TABLE LEDGER (
       const checkDate = row[headers[9]].split('/').map(part => parseInt(part, 10).toString(10));
       const netAmount = parseFloat(row[headers[7]]).toFixed(2);
       const accountNo = row[headers[5]].replace(/[-\s]+$/g, '').split('-').map(part => parseInt(part));
+      const invoiceNos = row[headers[3]].replace(/[-\s]/g, '-').split('-');
       const accountRE = parseInt(accountNo[0].toString().padStart(4, '0')[0]);
       let ol1 = 'NULL';
       let ol1Func = 'NULL';
@@ -195,6 +199,9 @@ CREATE TABLE LEDGER (
         VENDOR_NO,
         VENDOR_NAME,
         INVOICE_NO,
+        INVOICE_NO_1,
+        INVOICE_NO_2,
+        INVOICE_NO_3,
         INVOICE_DATE,
         ACCOUNT_RE,
         ACCOUNT_OL1,
@@ -212,8 +219,11 @@ CREATE TABLE LEDGER (
       ) VALUES (
        ${parseInt(row[headers[0]])},
        ${parseInt(row[headers[1]])},
-       '${row[headers[2]].trim().replace(/'/g, '\'\'')}',
-       '${row[headers[3]].trim().replace(/'/g, '\'\'')}',
+       ${stringOrNull(row[headers[2]])},
+       ${stringOrNull(row[headers[3]])},
+       ${stringOrNull(invoiceNos[0])},
+       ${stringOrNull(invoiceNos[1])},
+       ${stringOrNull(invoiceNos[2])},
        '${invoiceDate[2].padStart(4, '0')
         }-${invoiceDate[0].padStart(2, '0')
         }-${invoiceDate[1].padStart(2, '0')
@@ -234,17 +244,32 @@ CREATE TABLE LEDGER (
         }-${checkDate[0].padStart(2, '0')
         }-${checkDate[1].padStart(2, '0')
         }',
-       '${row[headers[10]].trim().replace(/'/g, '\'\'')}',
+       ${stringOrNull(row[headers[10]])},
        ${parseInt(row[headers[11]])}
       );`
     }).join('\n');
     await writeFile(sqlPath, sql, 'utf8');
-    console.log(`Wrote ${sql.length} bytes to ${sqlPath}`);
+    console.log(`✅ Wrote ${sql.length} bytes to ${sqlPath}`);
 
 
   } catch (err) {
-    console.error('Error:', err.message);
+    console.error('❌ Error:', err.message);
   }
+}
+
+const stringOrNull = value => {
+  if (!value) return 'NULL';
+  const escaped = value.trim()
+    // escape appostrophee
+    .replace(/'/g, '\'\'')
+    // single space
+    .replace(/  /g, ' ')
+    // asterisk prefix
+    .replace(/^[*\s]/g, '')
+    // remove asterisk suffix
+    .replace(/[*\s]$/g, '');
+  if (escaped.length === 0) return 'NULL';
+  return `'${escaped}'`;
 }
 
 const main = async () => {
