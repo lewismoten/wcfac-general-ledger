@@ -35,7 +35,7 @@ function App() {
   const [ol2, setOl2] = useState("-1");
   const [dept, setDept] = useState("-1");
 
-  const { isFetching, refetch, data, error } = useQuery<{ series: string, point: string, value: number, pointOrder: number }[]>({
+  const { isFetching, data, error } = useQuery<{ series: string, point: string, value: number, pointOrder: number }[]>({
     queryKey: ['chartData', fy, re, ol1, ol1Func, ol2, dept],
     placeholderData: keepPreviousData,
     queryFn: async () => {
@@ -67,11 +67,6 @@ function App() {
       })));
     }
   });
-
-  const getData = () => {
-    if (isFetching) return;
-    refetch();
-  }
 
   const maxValue = useMemo(() => {
     let defaultMax = 100000000;
@@ -158,9 +153,9 @@ function App() {
       <CoaLookup name='ol1Func' label="Function" visible={re === "-1" || re === "4"} value={ol1Func} onChange={setOl1Func} />
       <CoaLookup name='ol2' label="OL2" visible={re === "-1" || re === "4"} value={ol2} onChange={setOl2} />
       <CoaLookup name='dept' label="Department" visible={re === "-1" || re === "4"} value={dept} onChange={setDept} />
-      <button onClick={getData}>{isFetching ? 'Loading...' : 'Get Data'}</button>
       {error ? <b>{error.message}</b> : null}
       {prettyData}
+      {isFetching ? 'Loading...' : 'Ready'}
 
     </>
   )
