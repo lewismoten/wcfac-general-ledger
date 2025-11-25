@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, Legend } from 'recharts';
 import { CoaLookup } from './CoaLookup';
 
@@ -32,8 +32,9 @@ function App() {
   const [ol1Func, setOl1Func] = useState("-1");
   const [ol2, setOl2] = useState("-1");
 
-  const ff = useQuery({
+  const { isFetching, refetch, data, error } = useQuery<{ series: string, point: string, value: number, pointOrder: number }[]>({
     queryKey: ['chartData', re, ol1, ol1Func, ol2],
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const params = new URLSearchParams({
         re, ol1, ol1Func, ol2
@@ -44,24 +45,37 @@ function App() {
       if (params.get('ol2') === '-1') params.delete('ol2');
 
       const res = await fetch(`/api/year-over-year.php?${params.toString()}`);
-      return res.json();
+      return res.json().then(data => data.map(({ series, point, value, pointOrder }: { series: string, point: string, value: string, pointOrder: string }) => ({
+        series,
+        point,
+        value: parseFloat(value),
+        pointOrder: parseFloat(pointOrder)
+      })));
     }
   });
 
   const getData = () => {
-    if (ff.isFetching) return;
-    ff.refetch();
+    if (isFetching) return;
+    refetch();
   }
 
+  const maxValue = useMemo(() => {
+    let defaultMax = 100000000;
+    if (!data) return defaultMax;
+    if (data.length === 0) return defaultMax;
+    let max = data.reduce((max, { value }) => value > max ? value : max, -1);
+    if (max === -1) return defaultMax;
+    return max;
+  }, [data]);
+
   const prettyData = useMemo(() => {
-    if (!ff.data) return null;
+    if (!data) return null;
 
     const chartData: any[] = [];
     const seriesNames: string[] = [];
 
-    for (let i = 0; i < ff.data.length; i++) {
-      const { series, point, value, pointOrder } = ff.data[i];
-      const valueF = parseFloat(value);
+    for (let i = 0; i < data.length; i++) {
+      const { series, point, value, pointOrder } = data[i];
       if (!seriesNames.includes(series)) {
         seriesNames.push(series)
       }
@@ -70,25 +84,43 @@ function App() {
         chartData.push({
           name: point,
           sort: pointOrder,
-          [series]: valueF
+          [series]: value
         });
       } else {
         let x = chartData[idx];
         if (series in x) {
-          x[series] += valueF;
+          x[series] += value;
         } else {
-          x[series] = valueF;
+          x[series] = value;
         }
       }
 
     }
     chartData.sort((x1, x2) => x1.pointOrder < x2.pointOrder ? 1 : x1.pointOrder > x2.pointOrder ? -1 : 0);
+
+    let multiplier = 1;
+    let unit = '';
+    let maximumFractionDigits = 1;
+
+    if (maxValue > 2000000) {
+      multiplier = 0.000001;
+      unit = 'M';
+      if (maxValue > 10000000) {
+        maximumFractionDigits = 0;
+      }
+    } else if (maxValue > 2000) {
+      multiplier = 0.001;
+      unit = 'K';
+      if (maxValue > 10000) {
+        maximumFractionDigits = 0;
+      }
+    }
     const formatTickY = (value: any): string =>
-      (value * 0.000001).toLocaleString("en-US", {
+      (value * multiplier).toLocaleString("en-US", {
         style: "currency",
         currency: "USD",
-        maximumFractionDigits: 1,
-      }) + 'M';
+        maximumFractionDigits,
+      }) + unit;
 
     // <pre>{JSON.stringify(chartData, null, '  ')}</pre>
     return <div>
@@ -101,7 +133,7 @@ function App() {
             <Line key={series} dataKey={series} stroke={colors[idx % colors.length]} />)
         }</LineChart>
     </div>
-  }, [ff.data])
+  }, [data, maxValue])
 
   return (
     <>
@@ -110,8 +142,8 @@ function App() {
       <CoaLookup name='ol1' label="OL1" visible={re === "-1" || re === "4"} value={ol1} onChange={setOl1} />
       <CoaLookup name='ol1Func' label="Function" visible={re === "-1" || re === "4"} value={ol1Func} onChange={setOl1Func} />
       <CoaLookup name='ol2' label="OL2" visible={re === "-1" || re === "4"} value={ol2} onChange={setOl2} />
-      <button onClick={getData}>{ff.isFetching ? 'Loading...' : 'Get Data'}</button>
-      {ff.error ? <b>{ff.error.message}</b> : null}
+      <button onClick={getData}>{isFetching ? 'Loading...' : 'Get Data'}</button>
+      {error ? <b>{error.message}</b> : null}
       {prettyData}
 
     </>
