@@ -35,6 +35,11 @@ switch($id) {
         $fk = 'ACCOUNT_DEPT';
         $pad = 6;
         break;
+    case 'acct': 
+        $table = "COA_ACCT"; 
+        $fk = 'ACCOUNT_NO';
+        $pad = 4;
+        break;
     default: 
       echo json_encode([
         "error" => "Unknown type",
