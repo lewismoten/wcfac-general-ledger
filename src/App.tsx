@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, Legend } from 'recharts';
 import { CoaLookup } from './CoaLookup';
+import { FyLookup } from './FyLookup';
 
 const colors = [
   "#3366CC",
@@ -27,18 +28,20 @@ const colors = [
 ];
 
 function App() {
+  const [fy, setFy] = useState("-1");
   const [re, setRe] = useState("-1");
   const [ol1, setOl1] = useState("-1");
   const [ol1Func, setOl1Func] = useState("-1");
   const [ol2, setOl2] = useState("-1");
 
   const { isFetching, refetch, data, error } = useQuery<{ series: string, point: string, value: number, pointOrder: number }[]>({
-    queryKey: ['chartData', re, ol1, ol1Func, ol2],
+    queryKey: ['chartData', fy, re, ol1, ol1Func, ol2],
     placeholderData: keepPreviousData,
     queryFn: async () => {
       const params = new URLSearchParams({
-        re, ol1, ol1Func, ol2
+        fy, re, ol1, ol1Func, ol2
       });
+      if (params.get('fy') === '-1') params.delete('fy');
       if (params.get('re') === '-1') params.delete('re');
       if (params.get('ol1') === '-1') params.delete('ol1');
       if (params.get('ol1Func') === '-1') params.delete('ol1Func');
@@ -138,6 +141,7 @@ function App() {
   return (
     <>
       <h1>General Ledger</h1>
+      <FyLookup name='fy' label="Fiscal Year" value={fy} onChange={setFy} />
       <CoaLookup name='re' label="R/E" value={re} onChange={setRe} />
       <CoaLookup name='ol1' label="OL1" visible={re === "-1" || re === "4"} value={ol1} onChange={setOl1} />
       <CoaLookup name='ol1Func' label="Function" visible={re === "-1" || re === "4"} value={ol1Func} onChange={setOl1Func} />

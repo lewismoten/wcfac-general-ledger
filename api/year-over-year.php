@@ -8,6 +8,7 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
+$fy = $_GET['fy'];
 $re = $_GET['re'];
 $ol1 = $_GET['ol1'];
 $ol1Func = $_GET['ol1Func'];
@@ -38,17 +39,24 @@ if ($conn->connect_error) {
 $conn->set_charset($db["charset"] ?? "utf8");
 
 $filter = '';
-if($re !== '' && $re !== null && is_numeric($re) && $re != '-1') {
+function is_filtered($value) {
+   return $value  !== '' && $value !== null && is_numeric($value) && $value != '-1';
+}
+
+if(is_filtered($fy)) {
+    $filter .= " AND CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%Y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%Y') END = ".intval($fy);
+}
+if(is_filtered($re)) {
     $filter .= " AND LEDGER.ACCOUNT_RE = ".intval($re);
 }
-if($re == '' || $re == null || !is_numeric($re) || ($re == '-1' || $re == '4')) {
-    if($ol1 !== '' && $ol1 !== null && is_numeric($ol1) && $ol1 != '-1') {
+if((is_filtered($re) && $re === '4') || !is_filtered($re)) {
+    if(is_filtered($ol1)) {
         $filter .= " AND LEDGER.ACCOUNT_OL1 = ".intval($ol1);
     }
-    if($ol1Func !== '' && $ol1Func !== null && is_numeric($ol1Func) && $ol1Func != '-1') {
+    if(is_filtered($ol1Func)) {
         $filter .= " AND LEDGER.ACCOUNT_OL1_FUNC = ".intval($ol1Func);
     }
-    if($ol2 !== '' && $ol2 !== null && is_numeric($ol2) && $ol2 != '-1') {
+    if(is_filtered($ol2)) {
         $filter .= " AND LEDGER.ACCOUNT_OL2 = ".intval($ol2);
     }
 }
