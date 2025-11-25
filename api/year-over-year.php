@@ -57,7 +57,7 @@ if($filter != '') {
 }
 
 $sql = "SELECT 
-            CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name) AS `series`,
+            CONCAT('FY', CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%y') END, ' ', COA_RE.Name) AS `series`,
             DATE_FORMAT(CHECK_DATE, '%M') AS `point`,
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END AS `pointOrder`,
             SUM(NET_AMOUNT) AS `value`
@@ -70,7 +70,8 @@ $sql = "SELECT
             DATE_FORMAT(CHECK_DATE, '%M')
         ORDER BY
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 6 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END ASC,
-            CONCAT(DATE_FORMAT(CHECK_DATE, '%Y'), ' ', COA_RE.Name) ASC
+            CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%y') END,
+            CONCAT('', COA_RE.Name) ASC
         LIMIT 10000";
 $result = $conn->query($sql);
 
