@@ -11,14 +11,28 @@ header("Access-Control-Allow-Headers: Content-Type");
 $id = $_GET['type'];
 $table = '';
 $pad = 1;
+$fk = '';
 
 switch($id) {
-    case 're': $table = "COA_RE"; break;
-    case 'ol1': $table = "COA_OL1"; break;
-    case 'ol2': $table = "COA_OL2"; break;
-    case 'ol1Func': $table = "COA_FUNC"; break;
+    case 're': 
+        $table = "COA_RE"; 
+        $fk = 'ACCOUNT_RE';
+        break;
+    case 'ol1': 
+        $table = "COA_OL1";
+        $fk = 'ACCOUNT_OL1';
+         break;
+    case 'ol2': 
+        $table = "COA_OL2"; 
+        $fk = 'ACCOUNT_OL2';
+        break;
+    case 'ol1Func': 
+        $table = "COA_FUNC"; 
+        $fk = 'ACCOUNT_OL1_FUNC';
+    break;
     case 'dept': 
         $table = "COA_DEPT"; 
+        $fk = 'ACCOUNT_DEPT';
         $pad = 6;
         break;
     default: 
@@ -53,13 +67,14 @@ if ($conn->connect_error) {
 }
 $conn->set_charset($db["charset"] ?? "utf8");
 
-$sql = "SELECT 
-            ID as `id`,
-            CONCAT(LPAD(ID, $pad, '0'), ': ', Name) as `name`
+$sql = "SELECT DISTINCT
+            `$table`.ID as `id`,
+            CONCAT(LPAD(`$table`.ID, $pad, '0'), ': ', Name) as `name`
         FROM
             `$table`
+            INNER JOIN LEDGER WHERE LEDGER.`$fk` = `$table`.ID
         ORDER BY
-            ID ASC
+            `$table`.ID ASC
         LIMIT 500";
 $result = $conn->query($sql);
 
