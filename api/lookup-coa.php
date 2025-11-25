@@ -10,11 +10,17 @@ header("Access-Control-Allow-Headers: Content-Type");
 
 $id = $_GET['type'];
 $table = '';
+$pad = 1;
+
 switch($id) {
     case 're': $table = "COA_RE"; break;
     case 'ol1': $table = "COA_OL1"; break;
     case 'ol2': $table = "COA_OL2"; break;
     case 'ol1Func': $table = "COA_FUNC"; break;
+    case 'dept': 
+        $table = "COA_DEPT"; 
+        $pad = 6;
+        break;
     default: 
       echo json_encode([
         "error" => "Unknown type",
@@ -49,12 +55,12 @@ $conn->set_charset($db["charset"] ?? "utf8");
 
 $sql = "SELECT 
             ID as `id`,
-            Name as `name`
+            CONCAT(LPAD(ID, $pad, '0'), ': ', Name) as `name`
         FROM
             `$table`
         ORDER BY
             ID ASC
-        LIMIT 100";
+        LIMIT 500";
 $result = $conn->query($sql);
 
 if (!$result) {

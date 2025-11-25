@@ -13,6 +13,7 @@ $re = $_GET['re'];
 $ol1 = $_GET['ol1'];
 $ol1Func = $_GET['ol1Func'];
 $ol2 = $_GET['ol2'];
+$dept = $_GET['dept'];
 
 $config = require "config.php";
 $db = $config["db"];
@@ -70,6 +71,9 @@ if((is_filtered($re) && $re === '4') || !is_filtered($re)) {
     }
     if(is_filtered($ol2)) {
         $filter .= " AND LEDGER.ACCOUNT_OL2 = ".intval($ol2);
+    }
+    if(is_filtered($dept)) {
+        $filter .= " AND LEDGER.ACCOUNT_DEPT = ".intval($dept);
     }
 }
 if($filter != '') {
