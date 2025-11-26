@@ -89,35 +89,30 @@ function App() {
     }
   });
 
-  const maxValue = useMemo(() => {
-    let defaultMax = 100000000;
-    if (!data) return defaultMax;
-    if (data.length === 0) return defaultMax;
-    let max = data.reduce((max, { value }) => value > max ? value : max, -1);
-    if (max === -1) return defaultMax;
-    return max;
-  }, [data]);
+  const [monthlyChart, totalChart] = useMemo(() => {
+    if (!data) return [null, null];
 
-  const prettyData = useMemo(() => {
-    if (!data) return null;
-
-    const chartData: any[] = [];
+    const monthData: any[] = [];
+    const totalData: any[] = [{ name: 'total' }];
     const seriesNames: string[] = [];
 
     for (let i = 0; i < data.length; i++) {
       const { series, point, value, pointOrder } = data[i];
       if (!seriesNames.includes(series)) {
-        seriesNames.push(series)
+        seriesNames.push(series);
+        totalData[0][series] = value;
+      } else {
+        totalData[0][series] += value;
       }
-      let idx = chartData.findIndex(d => d.name === point);
+      let idx = monthData.findIndex(d => d.name === point);
       if (idx === -1) {
-        chartData.push({
+        monthData.push({
           name: point,
           sort: pointOrder,
           [series]: value
         });
       } else {
-        let x = chartData[idx];
+        let x = monthData[idx];
         if (series in x) {
           x[series] += value;
         } else {
@@ -126,51 +121,72 @@ function App() {
       }
 
     }
-    chartData.sort((x1, x2) => x1.sort > x2.sort ? 1 : x1.sort < x2.sort ? -1 : 0);
+    monthData.sort((x1, x2) => x1.sort > x2.sort ? 1 : x1.sort < x2.sort ? -1 : 0);
 
-    let multiplier = 1;
-    let unit = '';
-    let maximumFractionDigits = 2;
+    const formatTickY = (data: any[]) => {
 
-    if (maxValue > 2000000) {
-      multiplier = 0.000001;
-      unit = 'M';
-      if (maxValue > 10000000) {
-        maximumFractionDigits = 0;
-      } else {
-        maximumFractionDigits = 1;
+      const maxValue = data.reduce((max, point) => Object.keys(point)
+        .filter(key => !['name', 'sort'].includes(key))
+        .reduce((keyMax, key) => point[key] > keyMax ? point[key] : keyMax, max)
+        , -1);
+
+      let multiplier = 1;
+      let unit = '';
+      let maximumFractionDigits = 2;
+
+      if (maxValue > 1000000) {
+        multiplier = 0.000001;
+        unit = 'M';
+        if (maxValue > 10000000) {
+          maximumFractionDigits = 0;
+        } else {
+          maximumFractionDigits = 1;
+        }
+      } else if (maxValue > 1000) {
+        multiplier = 0.001;
+        unit = 'K';
+        if (maxValue > 10000) {
+          maximumFractionDigits = 0;
+        } else {
+          maximumFractionDigits = 1;
+        }
       }
-    } else if (maxValue > 2000) {
-      multiplier = 0.001;
-      unit = 'K';
-      if (maxValue > 10000) {
-        maximumFractionDigits = 0;
-      } else {
-        maximumFractionDigits = 1;
-      }
+
+      return (value: any): string => {
+        let text = (value * multiplier).toLocaleString("en-US", {
+          style: "currency",
+          currency: "USD",
+          maximumFractionDigits,
+        });
+        // remove .0 and .00 suffix
+        return text.replace(/\.0+$/, '') + unit
+      };
     }
-    const formatTickY = (value: any): string => {
-      let text = (value * multiplier).toLocaleString("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits,
-      });
-      // remove .0 and .00 suffix
-      return text.replace(/\.0+$/, '') + unit
-    };
 
-    // <pre>{JSON.stringify(chartData, null, '  ')}</pre>
-    return <div>
-      <LineChart width={800} height={400} data={chartData}>
-        <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
-        <YAxis tickFormatter={formatTickY} />
-        <Legend />
-        {
-          seriesNames.map((series, idx) =>
-            <Line key={series} dataKey={series} stroke={colors[idx % colors.length]} />)
-        }</LineChart>
-    </div>
-  }, [data, maxValue])
+    // <pre>{JSON.stringify(monthData, null, '  ')}</pre>
+    return [
+      <div>
+        <LineChart width={800} height={400} data={monthData}>
+          <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
+          <YAxis tickFormatter={formatTickY(monthData)} />
+          <Legend />
+          {
+            seriesNames.map((series, idx) =>
+              <Line key={series} dataKey={series} stroke={colors[idx % colors.length]} />)
+          }</LineChart>
+      </div>,
+      <div>
+        <LineChart width={400} height={400} data={totalData}>
+          <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
+          <YAxis tickFormatter={formatTickY(totalData)} />
+          <Legend />
+          {
+            seriesNames.map((series, idx) =>
+              <Line key={series} dataKey={series} stroke={colors[idx % colors.length]} />)
+          }</LineChart>
+      </div>
+    ]
+  }, [data])
 
   return (
     <>
@@ -188,7 +204,8 @@ function App() {
       <InvoiceLookup level="3" label="Invoice[3]" visible value={inv3} onChange={setInv3} searchParams={searchParams} />
       <InvoiceLookup level="-1" label="Invoice" visible value={inv} onChange={setInv} searchParams={searchParams} />
       {error ? <b>{error.message}</b> : null}
-      {prettyData}
+      {monthlyChart}
+      {totalChart}
       {isFetching ? 'Loading...' : 'Ready'}
 
     </>
