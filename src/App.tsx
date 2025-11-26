@@ -130,27 +130,34 @@ function App() {
 
     let multiplier = 1;
     let unit = '';
-    let maximumFractionDigits = 1;
+    let maximumFractionDigits = 2;
 
     if (maxValue > 2000000) {
       multiplier = 0.000001;
       unit = 'M';
       if (maxValue > 10000000) {
         maximumFractionDigits = 0;
+      } else {
+        maximumFractionDigits = 1;
       }
     } else if (maxValue > 2000) {
       multiplier = 0.001;
       unit = 'K';
       if (maxValue > 10000) {
         maximumFractionDigits = 0;
+      } else {
+        maximumFractionDigits = 1;
       }
     }
-    const formatTickY = (value: any): string =>
-      (value * multiplier).toLocaleString("en-US", {
+    const formatTickY = (value: any): string => {
+      let text = (value * multiplier).toLocaleString("en-US", {
         style: "currency",
         currency: "USD",
         maximumFractionDigits,
-      }) + unit;
+      });
+      // remove .0 and .00 suffix
+      return text.replace(/\.0+$/, '') + unit
+    };
 
     // <pre>{JSON.stringify(chartData, null, '  ')}</pre>
     return <div>
