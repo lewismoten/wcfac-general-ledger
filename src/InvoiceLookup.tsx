@@ -28,13 +28,21 @@ export const InvoiceLookup = ({ level, value = "-1", onChange, visible = true, l
   });
 
   const options = useMemo(() => {
-    if (isFetching) return <option>Fetching</option>;
-    if (error) return <option>Error</option>;
-    if (!data) return <option>No Data</option>;
-    return [{ id: "-1", name: "All" }, ...data].map(({ id, name }) => (
-      <option value={id} key={id} selected={value === id}>{name}</option>
-    ));
-  }, [data, error, isFetching, value])
+    if (!data) {
+      if (isFetching) return <option>Fetching</option>;
+      if (error) return <option>Error</option>;
+      return <option>No Data</option>;
+    }
+    let found = false;
+    const o = [{ id: "-1", name: "All" }, ...data].map(({ id, name }) => {
+      if (!found && id.toString() === value.toString()) found = true;
+      return (
+        <option value={id} key={id} selected={value.toString() === id.toString()}>{name}</option>
+      )
+    });
+    if (!found && value !== "-1") onChange("-1");
+    return o;
+  }, [data, error, isFetching, value, onChange])
 
   const changeSelected = useCallback((event: ChangeEvent<HTMLSelectElement>): void => {
     const selectedValue = event.currentTarget.selectedOptions[0].value ?? value;

@@ -13,11 +13,13 @@ export const FyLookup = ({ name, values = ["-1"], onChange, visible = true, labe
   });
 
   const options = useMemo(() => {
-    if (isFetching) return <option>Fetching</option>;
-    if (error) return <option>Error</option>;
-    if (!data) return <option>No Data</option>;
+    if (!data) {
+      if (isFetching) return <option>Fetching</option>;
+      if (error) return <option>Error</option>;
+      return <option>No Data</option>;
+    }
     return [{ id: "-1", name: "All" }, ...data].map(({ id, name }) => (
-      <option value={id} key={id} selected={values.includes(id)}>{name}</option>
+      <option value={id} key={id} selected={values.includes(id.toString())}>{name}</option>
     ));
   }, [data, error, isFetching, values])
 
