@@ -177,6 +177,10 @@ function App() {
         <LineChart responsive width={800} height={400} data={monthData}>
           <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
           <YAxis tickFormatter={formatTickY(monthData)} />
+          <Tooltip formatter={(value) => value.toLocaleString("en-US", {
+            style: "currency",
+            currency: "USD", maximumFractionDigits: 2
+          })} />
           <Legend />
           {
             seriesNames.map((series, idx) =>
@@ -186,8 +190,11 @@ function App() {
       <div>
         <BarChart responsive width={800} height={400} data={totalData}>
           <CartesianGrid strokeDasharray="3 3" />
-          <Tooltip />
-          <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
+          <Tooltip formatter={(value) => value.toLocaleString("en-US", {
+            style: "currency",
+            currency: "USD", maximumFractionDigits: 2
+          })} />
+          <XAxis stroke="#333" dataKey="name" fontSize={10} tickLine={true} />
           <YAxis width="auto" tickFormatter={formatTickY(totalData)} />
           <Legend />
           {
