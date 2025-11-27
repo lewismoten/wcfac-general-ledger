@@ -13,7 +13,7 @@ export const MonthlyChart = ({ data, series }: { data: any[], series: string[] }
     <Legend />
     {
       series.map((series, idx) =>
-        <Line key={series} dataKey={series} stroke={colors[idx % colors.length]} />)
+        <Line key={series} dataKey={series} stroke={colors[idx % colors.length]} connectNulls />)
     }</LineChart>
 
 }
