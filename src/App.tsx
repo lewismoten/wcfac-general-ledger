@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { LineChart, Bar, Line, XAxis, YAxis, Legend, Tooltip, CartesianGrid } from 'recharts';
+import { LineChart, BarChart, Bar, Line, XAxis, YAxis, Legend, Tooltip, CartesianGrid } from 'recharts';
 import { CoaLookup } from './CoaLookup';
 import { FyLookup } from './FyLookup';
 import { InvoiceLookup } from './InvoiceLookup';
@@ -185,7 +185,7 @@ function App() {
           }</LineChart>
       </div>,
       <div>
-        <LineChart responsive width={800} height={400} data={totalData}>
+        <BarChart responsive width={800} height={400} data={totalData}>
           <CartesianGrid strokeDasharray="3 3" />
           <Tooltip />
           <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
@@ -194,7 +194,7 @@ function App() {
           {
             seriesNames.map((series, idx) =>
               <Bar stackId="a" key={series} dataKey={series} fill={colors[idx % colors.length]} />)
-          }</LineChart>
+          }</BarChart>
       </div>
     ]
   }, [data])
