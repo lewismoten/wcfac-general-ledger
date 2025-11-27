@@ -4,6 +4,7 @@ import { LineChart, BarChart, Bar, Line, XAxis, YAxis, Legend, Tooltip, Cartesia
 import { CoaLookup } from './CoaLookup';
 import { FyLookup } from './FyLookup';
 import { InvoiceLookup } from './InvoiceLookup';
+import { SeriesPicker } from './SeriesPicker';
 
 
 const colors = [
@@ -42,6 +43,7 @@ function App() {
   const [inv1, setInv1] = useState("-1");
   const [inv2, setInv2] = useState("-1");
   const [inv3, setInv3] = useState("-1");
+  const [series, setSeries] = useState(['fy']);
 
   const searchParams = useMemo(() => {
     const params = new URLSearchParams({
@@ -50,7 +52,8 @@ function App() {
       ol1, ol1Func, ol2, dept,
       acct,
       vend,
-      inv, inv1, inv2, inv3
+      inv, inv1, inv2, inv3,
+      series: series.join(',')
     });
     if (params.get('fy') === '-1') params.delete('fy');
     if (params.get('re') !== '4' && params.get('re') !== '-1') {
@@ -72,8 +75,10 @@ function App() {
     if (params.get('inv1') === '-1') params.delete('inv1');
     if (params.get('inv2') === '-1') params.delete('inv2');
     if (params.get('inv3') === '-1') params.delete('inv3');
+    if (params.get('series') === '') params.delete('series');
+
     return params.toString();
-  }, [fy, re, ol1, ol1Func, ol2, dept, acct, vend, inv, inv1, inv2, inv3])
+  }, [fy, re, ol1, ol1Func, ol2, dept, acct, vend, inv, inv1, inv2, inv3, series])
   const { isFetching, data, error } = useQuery<{ series: string, point: string, value: number, pointOrder: number }[]>({
     queryKey: ['chartData', searchParams],
     placeholderData: keepPreviousData,
@@ -221,6 +226,7 @@ function App() {
       <InvoiceLookup level="2" label="Invoice[2]" visible value={inv2} onChange={setInv2} searchParams={searchParams} />
       <InvoiceLookup level="3" label="Invoice[3]" visible value={inv3} onChange={setInv3} searchParams={searchParams} />
       <InvoiceLookup level="-1" label="Invoice" visible value={inv} onChange={setInv} searchParams={searchParams} />
+      <SeriesPicker selected={series} onChange={setSeries} />
       {error ? <b>{error.message}</b> : null}
       {monthlyChart}
       {totalChart}

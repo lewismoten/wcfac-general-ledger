@@ -14,6 +14,7 @@ export const InvoiceLookup = ({ level, value = "-1", onChange, visible = true, l
         }
       }
     }
+    if (params.has('series')) params.delete('series');
     return params.toString();
   }, [searchParams]);
 

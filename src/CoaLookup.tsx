@@ -13,6 +13,7 @@ export const CoaLookup = ({ name, value = "-1", onChange, visible = true, label,
         }
       }
     }
+    if (params.has('series')) params.delete('series');
     return params.toString();
   }, [searchParams]);
   const { isFetching, error, data } = useQuery({

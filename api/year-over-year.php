@@ -23,6 +23,7 @@ $inv = isset($_GET['inv']) ? $_GET['inv'] : '';
 $inv1 = isset($_GET['inv1']) ? $_GET['inv1'] : '';
 $inv2 = isset($_GET['inv2']) ? $_GET['inv2'] : '';
 $inv3 = isset($_GET['inv3']) ? $_GET['inv3'] : '';
+$series = isset($_GET['series']) ? explode(',', $_GET['series']) : ['fy'];
 
 $config = require "config.php";
 $db = $config["db"];
@@ -68,28 +69,47 @@ function is_filtered_multi($values) {
 $types = '';
 $params = [];
 
+$fiscalYearLabel = "'FY', CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END";
 $seriesColumn = '';
 $seriesJoin = '';
+$seriesColumnPieces = [];
+$seriesJoinPieces = [];
 
-$multiYear = false;
-$fiscalYear = "'FY', CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END";
-
-
+$seriesParts = [];
+foreach($series as $name) {
+    switch($name) {
+        case 'fy':
+            $seriesColumnPieces[] = $fiscalYearLabel;
+            break;
+        case 're':
+            $seriesColumnPieces[] = "COA_RE.Name";
+            $seriesJoinPieces[] = "INNER JOIN COA_RE ON LEDGER.ACCOUNT_RE = COA_RE.ID";
+            break;
+        case 'dept':
+            $seriesColumnPieces[] = "COA_DEPT.Name";
+            $seriesJoinPieces[] = "INNER JOIN COA_DEPT ON COA_DEPT.ID = LEDGER.ACCOUNT_DEPT";
+            break;
+        case 'vend':
+            $seriesColumnPieces[] = "VENDOR.Name";
+            $seriesJoinPieces[] = "INNER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID";
+            break;
+    }
+}
+if(sizeof($seriesColumnPieces) > 0) {
+    $seriesColumn = implode(", ' ', ", $seriesColumnPieces);
+} else {
+    $seriesColumn = $fiscalYearLabel;
+}
+if(sizeof($seriesJoinPieces) > 0) {
+    $seriesJoin = implode(' ', $seriesJoinPieces);
+} else {
+    $seriesJoin = '';
+}
 if(is_filtered_multi($fy)) {
     $filter .= " AND CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%Y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%Y') END IN($fy)";
-    if(sizeof(explode(',', $fy)) > 1) {
-    $multiYear = true;
-    } else {
-        $seriesColumn = "COA_RE.Name";
-        $seriesJoin = "INNER JOIN COA_RE ON LEDGER.ACCOUNT_RE = COA_RE.ID";
-    }
-} else {
-    $multiYear = true;
 }
 if(is_filtered($re)) {
     $filter .= " AND LEDGER.ACCOUNT_RE = ".intval($re);
-    $seriesColumn = "COA_DEPT.Name";
-    $seriesJoin = "INNER JOIN COA_DEPT ON COA_DEPT.ID = LEDGER.ACCOUNT_DEPT";
 }
 if((is_filtered($re) && $re === '4') || !is_filtered($re)) {
     if(is_filtered($ol1)) {
@@ -107,8 +127,6 @@ if((is_filtered($re) && $re === '4') || !is_filtered($re)) {
 }
 if(is_filtered($acct)) {
     $filter .= " AND LEDGER.ACCOUNT_NO = ".intval($acct);
-    $seriesColumn = "VENDOR.Name";
-    $seriesJoin = "INNER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID";
 }
 if(is_filtered($vend)) {
     $filter .= " AND LEDGER.VENDOR_ID = ".intval($vend);
