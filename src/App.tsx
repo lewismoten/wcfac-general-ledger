@@ -5,6 +5,7 @@ import { CoaLookup } from './CoaLookup';
 import { FyLookup } from './FyLookup';
 import { InvoiceLookup } from './InvoiceLookup';
 import { SeriesPicker } from './SeriesPicker';
+import { formatBigDollarValue } from './utils';
 
 
 const colors = [
@@ -136,45 +137,8 @@ function App() {
       const value = data[data.name] as number;
       data[data.name] = Math.round(value * 100) * 0.01;
     });
-    const formatTickY = (data: any[]) => {
 
-      const maxValue = data.reduce((max, point) => Object.keys(point)
-        .filter(key => !['name', 'sort'].includes(key))
-        .reduce((keyMax, key) => point[key] > keyMax ? point[key] : keyMax, max)
-        , -1);
-
-      let multiplier = 1;
-      let unit = '';
-      let maximumFractionDigits = 2;
-
-      if (maxValue > 1000000) {
-        multiplier = 0.000001;
-        unit = 'M';
-        if (maxValue > 10000000) {
-          maximumFractionDigits = 0;
-        } else {
-          maximumFractionDigits = 1;
-        }
-      } else if (maxValue > 1000) {
-        multiplier = 0.001;
-        unit = 'K';
-        if (maxValue > 10000) {
-          maximumFractionDigits = 0;
-        } else {
-          maximumFractionDigits = 1;
-        }
-      }
-
-      return (value: any): string => {
-        let text = (value * multiplier).toLocaleString("en-US", {
-          style: "currency",
-          currency: "USD",
-          maximumFractionDigits,
-        });
-        // remove .0 and .00 suffix
-        return text.replace(/\.0+$/, '') + unit
-      };
-    }
+    const displayedSeries = seriesNames.slice(0, 10);
 
     // <pre>{JSON.stringify(monthData, null, '  ')}</pre>
     return [
@@ -182,7 +146,7 @@ function App() {
         <LineChart responsive width={800} height={400} data={monthData}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
-          <YAxis tickFormatter={formatTickY(monthData)} />
+          <YAxis tickFormatter={formatBigDollarValue} />
           <Tooltip formatter={(value) => value.toLocaleString("en-US", {
             style: "currency",
             currency: "USD", maximumFractionDigits: 2
@@ -201,7 +165,7 @@ function App() {
             currency: "USD", maximumFractionDigits: 2
           })} />
           <XAxis stroke="#333" dataKey="name" fontSize={10} tickLine={true} />
-          <YAxis width="auto" tickFormatter={formatTickY(totalData)} />
+          <YAxis width="auto" tickFormatter={formatBigDollarValue} />
           <Legend />
           {
             seriesNames.map((series, idx) =>
