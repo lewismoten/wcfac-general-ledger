@@ -59,31 +59,38 @@ function App() {
 
     return params.toString();
   }, [fy, re, ol1, ol1Func, ol2, dept, acct, vend, inv, inv1, inv2, inv3, series])
-  const { isFetching, data, error } = useQuery<{ series: string, point: string, value: number, pointOrder: number }[]>({
+  const { isFetching, data, error } = useQuery<{ count: number, rows: { series: string, point: string, value: number, pointOrder: number }[] }>({
     queryKey: ['chartData', searchParams],
     placeholderData: keepPreviousData,
     queryFn: async () => {
 
       const res = await fetch(`/api/year-over-year.php?${searchParams}`);
-      return res.json().then(data => data.map(({ series, point, value, pointOrder }: { series: string, point: string, value: string, pointOrder: string }) => ({
-        series,
-        point,
-        value: parseFloat(value),
-        pointOrder: parseFloat(pointOrder)
-      })));
+      return res.json().then(data => ({
+        count: data.count,
+        rows: data.rows.map(({ series, point, value, pointOrder }: { series: string, point: string, value: string, pointOrder: string }) => ({
+          series,
+          point,
+          value: parseFloat(value),
+          pointOrder: parseFloat(pointOrder)
+        }))
+      })
+      )
     }
+
   });
 
-  const [monthlyData, totalData, seriesNames] = useMemo(() => {
-    if (!data) return [[], [], []];
+  const [monthlyData, totalData, seriesNames, visibleCount, totalCount, isPaged] = useMemo(() => {
+    if (!data || data.count === 0 || data.rows.length === 0) return [[], [], [], 0, 0, false];
+    const { rows, count } = data;
+    if (rows.length === 0) return [[], [], [], rows.length, count, count > 0];
 
     const monthData: any[] = [];
     const totalData: any[] = [];
     const totalData2: any[] = [{ name: 'total' }];
     const seriesNames: string[] = [];
 
-    for (let i = 0; i < data.length; i++) {
-      const { series, point, value, pointOrder } = data[i];
+    for (let i = 0; i < rows.length; i++) {
+      const { series, point, value, pointOrder } = rows[i];
       if (!seriesNames.includes(series)) {
         seriesNames.push(series);
         totalData.push({ name: series, [series]: [value] });
@@ -112,9 +119,9 @@ function App() {
     }
     monthData.sort((x1, x2) => x1.sort > x2.sort ? 1 : x1.sort < x2.sort ? -1 : 0);
 
-    totalData.forEach((data) => {
-      const value = data[data.name] as number;
-      data[data.name] = Math.round(value * 100) * 0.01;
+    totalData.forEach((row) => {
+      const value = row[row.name] as number;
+      row[row.name] = Math.round(value * 100) * 0.01;
     });
 
     // sort seriesNames by totalData values for paginating largest to smallest
@@ -128,7 +135,10 @@ function App() {
     return [
       monthData,
       totalData,
-      seriesNames
+      seriesNames,
+      rows.length,
+      count,
+      count > rows.length
     ]
   }, [data]);
 
@@ -154,6 +164,8 @@ function App() {
       <InvoiceLookup level="-1" label="Invoice" visible value={inv} onChange={setInv} searchParams={searchParams} />
       <SeriesPicker selected={series} onChange={setSeries} />
       {error ? <b>{error.message}</b> : null}
+      {isPaged ? `Paged.` : null}
+      <div>Showing {visibleCount} of {totalCount}.</div>
       <MonthlyChart data={monthlyData} series={displayedSeries} />
       <TotalChart data={totalData} series={displayedSeries} />
       {isFetching ? 'Loading...' : 'Ready'}

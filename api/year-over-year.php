@@ -182,39 +182,61 @@ if(is_filtered($inv3)) {
     $params[] = $inv3;
 }
 
-if($multiYear) {
-    if($seriesColumn == '') {
-        $seriesColumn = $fiscalYear;
-    } else {
-        $seriesColumn = "$fiscalYear, ' ', $seriesColumn";
-    }
-} else if($seriesColumn == '') {
-    $seriesColumn = $fiscalYear;
-}
-
 if($filter != '') {
     $filter = "WHERE 1=1 $filter";
 }
 
-$sql = "SELECT 
-            CONCAT($seriesColumn) AS `series`,
-            DATE_FORMAT(CHECK_DATE, '%M') AS `point`,
-            CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END AS `pointOrder`,
-            SUM(NET_AMOUNT) AS `value`
-        FROM LEDGER 
+$fromWhere = "FROM LEDGER 
         $seriesJoin
         $filter
         GROUP BY 
             CONCAT($seriesColumn),
             DATE_FORMAT(CHECK_DATE, '%M'),
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END
+        ";
+
+$sql = "SELECT COUNT(0) AS `total` FROM (SELECT 1 $fromWhere) AS `x`";
+$sqlcount = $sql;
+$stmt = $conn->prepare($sql);
+
+if(!$stmt) {
+  echo json_encode([
+      "error" => "Prepare statement failed",
+      "details" => $conn->error,
+      "sql" => $sql
+  ]);
+    exit;
+}
+
+if ($types !== '') {
+    $stmt->bind_param($types, ...$params);
+}
+
+if(!$stmt->execute()) {
+  echo json_encode([
+      "error" => "Query execution failed",
+      "details" => $conn->error,
+      "sql" => $sql
+  ]);
+    exit;
+}
+$stmt->bind_result($count);
+$stmt->fetch();
+$stmt->free_result();
+$stmt->close();
+
+$sql = "SELECT 
+            CONCAT($seriesColumn) AS `series`,
+            DATE_FORMAT(CHECK_DATE, '%M') AS `point`,
+            CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END AS `pointOrder`,
+            SUM(NET_AMOUNT) AS `value`
+        $fromWhere
         ORDER BY
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END ASC,
-            CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END,
             CONCAT($seriesColumn) ASC
-        LIMIT 10000";
+        LIMIT 1200";
 // echo $sql;
-
+$sqlselect = $sql;
 $stmt = $conn->prepare($sql);
 
 if(!$stmt) {
@@ -254,6 +276,15 @@ while ($row = $result->fetch_assoc()) {
     $rows[] = $row;
 }
 
+$stmt->free_result();
+$stmt->close();
 $conn->close();
 
-echo json_encode($rows, JSON_PRETTY_PRINT);
+echo json_encode([
+    "rows" => $rows,
+    "count" => $count,
+    "sql" => [
+        "count" => $sqlcount,
+        "select" => $sqlselect
+    ]
+], JSON_PRETTY_PRINT);
