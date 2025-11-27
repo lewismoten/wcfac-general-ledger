@@ -90,8 +90,36 @@ foreach($series as $name) {
             $seriesJoinPieces[] = "INNER JOIN COA_DEPT ON COA_DEPT.ID = LEDGER.ACCOUNT_DEPT";
             break;
         case 'vend':
-            $seriesColumnPieces[] = "VENDOR.Name";
+            $seriesColumnPieces[] = "LPAD(VENDOR.ID, 6, '0'), ': ', VENDOR.Name";
             $seriesJoinPieces[] = "INNER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID";
+            break;
+        case 'ol1':
+            $seriesColumnPieces[] = "LPAD(COA_OL1.ID, 1, '0'), ': ', COA_OL1.Name";
+            $seriesJoinPieces[] = "INNER JOIN COA_OL1 ON COA_OL1.ID = LEDGER.ACCOUNT_OL1";
+            break;
+        case 'ol1Func':
+            $seriesColumnPieces[] = "LPAD(COA_FUNC.ID, 1, '0'), ': ', COA_FUNC.Name";
+            $seriesJoinPieces[] = "INNER JOIN COA_FUNC ON COA_FUNC.ID = LEDGER.ACCOUNT_OL1_FUNC";
+            break;
+        case 'ol2':
+            $seriesColumnPieces[] = "LPAD(COA_OL2.ID, 1, '0'), ': ', COA_OL2.Name";
+            $seriesJoinPieces[] = "INNER JOIN COA_OL2 ON COA_OL2.ID = LEDGER.ACCOUNT_OL2";
+            break;
+        case 'acct':
+            $seriesColumnPieces[] = "LPAD(COA_ACCT.ID, 5, '0'), ': ', COA_ACCT.Name";
+            $seriesJoinPieces[] = "INNER JOIN COA_ACCT ON COA_ACCT.ID = LEDGER.ACCOUNT_NO";
+            break;
+        case 'inv':
+            $seriesColumnPieces[] = "LEDGER.INVOICE_NO";
+            break;
+        case 'inv1':
+            $seriesColumnPieces[] = "LEDGER.INVOICE_NO_1";
+            break;
+        case 'inv2': 
+            $seriesColumnPieces[] = "LEDGER.INVOICE_NO_2";
+            break;
+        case 'inv3':
+            $seriesColumnPieces[] = "LEDGER.INVOICE_NO_3";
             break;
     }
 }
