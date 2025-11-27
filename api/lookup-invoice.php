@@ -35,8 +35,8 @@ function is_filtered_s($value) {
    return $value  !== '' && $value !== null && $value != '-1';
 }
 function is_filtered_multi($values) {
-   if($values  == '' || $values == null || $value == '-1') return false;
-   if(is_numeric($value)) return true;
+   if($values  == '' || $values == null || $values == '-1') return false;
+   if(is_numeric($values)) return true;
    $parts = explode(',', $values);
     foreach ($parts as $p) {
         $p = trim($p);

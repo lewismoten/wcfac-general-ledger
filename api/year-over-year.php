@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
@@ -50,8 +53,8 @@ function is_filtered($value) {
    return $value  !== '' && $value !== null && is_numeric($value) && $value != '-1';
 }
 function is_filtered_multi($values) {
-   if($values  == '' || $values == null || $value == '-1') return false;
-   if(is_numeric($value)) return true;
+   if($values  == '' || $values == null || $values == '-1') return false;
+   if(is_numeric($values)) return true;
    $parts = explode(',', $values);
     foreach ($parts as $p) {
         $p = trim($p);
@@ -65,11 +68,28 @@ function is_filtered_multi($values) {
 $types = '';
 $params = [];
 
+$seriesColumn = '';
+$seriesJoin = '';
+
+$multiYear = false;
+$fiscalYear = "'FY', CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END";
+
+
 if(is_filtered_multi($fy)) {
     $filter .= " AND CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%Y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%Y') END IN($fy)";
+    if(sizeof(explode(',', $fy)) > 1) {
+    $multiYear = true;
+    } else {
+        $seriesColumn = "COA_RE.Name";
+        $seriesJoin = "INNER JOIN COA_RE ON LEDGER.ACCOUNT_RE = COA_RE.ID";
+    }
+} else {
+    $multiYear = true;
 }
 if(is_filtered($re)) {
     $filter .= " AND LEDGER.ACCOUNT_RE = ".intval($re);
+    $seriesColumn = "COA_DEPT.Name";
+    $seriesJoin = "INNER JOIN COA_DEPT ON COA_DEPT.ID = LEDGER.ACCOUNT_DEPT";
 }
 if((is_filtered($re) && $re === '4') || !is_filtered($re)) {
     if(is_filtered($ol1)) {
@@ -87,9 +107,13 @@ if((is_filtered($re) && $re === '4') || !is_filtered($re)) {
 }
 if(is_filtered($acct)) {
     $filter .= " AND LEDGER.ACCOUNT_NO = ".intval($acct);
+    $seriesColumn = "VENDOR.Name";
+    $seriesJoin = "INNER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID";
 }
 if(is_filtered($vend)) {
     $filter .= " AND LEDGER.VENDOR_ID = ".intval($vend);
+    $seriesColumn = "";
+    $seriesJoin = "";
 }
 if(is_filtered($inv)) {
     $filter .= " AND LEDGER.INVOICE_NO = ?";
@@ -112,33 +136,46 @@ if(is_filtered($inv3)) {
     $params[] = $inv3;
 }
 
+if($multiYear) {
+    if($seriesColumn == '') {
+        $seriesColumn = $fiscalYear;
+    } else {
+        $seriesColumn = "$fiscalYear, ' ', $seriesColumn";
+    }
+} else if($seriesColumn == '') {
+    $seriesColumn = $fiscalYear;
+}
+
 if($filter != '') {
     $filter = "WHERE 1=1 $filter";
 }
 
-$stmt = $conn->prepare("SELECT 
-            CONCAT('FY', CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END, ' ', COA_RE.Name) AS `series`,
+$sql = "SELECT 
+            CONCAT($seriesColumn) AS `series`,
             DATE_FORMAT(CHECK_DATE, '%M') AS `point`,
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END AS `pointOrder`,
             SUM(NET_AMOUNT) AS `value`
         FROM LEDGER 
-        INNER JOIN COA_RE ON
-            LEDGER.ACCOUNT_RE = COA_RE.ID
+        $seriesJoin
         $filter
         GROUP BY 
-            CONCAT('FY', CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END, ' ', COA_RE.Name),
+            CONCAT($seriesColumn),
             DATE_FORMAT(CHECK_DATE, '%M'),
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END
         ORDER BY
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END ASC,
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END,
-            CONCAT('', COA_RE.Name) ASC
-        LIMIT 10000");
+            CONCAT($seriesColumn) ASC
+        LIMIT 10000";
+// echo $sql;
+
+$stmt = $conn->prepare($sql);
 
 if(!$stmt) {
   echo json_encode([
       "error" => "Prepare statement failed",
-      "details" => $conn->error
+      "details" => $conn->error,
+      "sql" => $sql
   ]);
     exit;
 }
@@ -150,7 +187,8 @@ if ($types !== '') {
 if(!$stmt->execute()) {
   echo json_encode([
       "error" => "Query execution failed",
-      "details" => $conn->error
+      "details" => $conn->error,
+      "sql" => $sql
   ]);
     exit;
 }
