@@ -1,35 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { LineChart, BarChart, Bar, Line, XAxis, YAxis, Legend, Tooltip, CartesianGrid } from 'recharts';
 import { CoaLookup } from './CoaLookup';
 import { FyLookup } from './FyLookup';
 import { InvoiceLookup } from './InvoiceLookup';
 import { SeriesPicker } from './SeriesPicker';
-import { formatBigDollarValue } from './utils';
+import { MonthlyChart } from './MonthlyChart';
+import { TotalChart } from './TotalChart';
 
 
-const colors = [
-  "#3366CC",
-  "#DC3912",
-  "#FF9900",
-  "#109618",
-  "#990099",
-  "#0099C6",
-  "#DD4477",
-  "#66AA00",
-  "#B82E2E",
-  "#316395",
-  "#994499",
-  "#22AA99",
-  "#AAAA11",
-  "#6633CC",
-  "#E67300",
-  "#8B0707",
-  "#651067",
-  "#329262",
-  "#5574A6",
-  "#3B3EAC"
-];
+
 
 function App() {
   const [fy, setFy] = useState(["-1"]);
@@ -95,8 +74,8 @@ function App() {
     }
   });
 
-  const [monthlyChart, totalChart] = useMemo(() => {
-    if (!data) return [null, null];
+  const [monthlyData, totalData, seriesNames] = useMemo(() => {
+    if (!data) return [[], [], []];
 
     const monthData: any[] = [];
     const totalData: any[] = [];
@@ -138,42 +117,26 @@ function App() {
       data[data.name] = Math.round(value * 100) * 0.01;
     });
 
-    const displayedSeries = seriesNames.slice(0, 10);
+    // sort seriesNames by totalData values for paginating largest to smallest
+    seriesNames.sort((s1, s2) => {
+      const v1 = totalData.find(d => d.name === s1)[s1];
+      const v2 = totalData.find(d => d.name === s2)[s2];
+      console.log({ [s1]: v1, [s2]: v2, sort: v1 < v2 ? 1 : v1 > v2 ? -1 : 0 })
+      return v1 < v2 ? 1 : v1 > v2 ? -1 : 0;
+    });
 
     // <pre>{JSON.stringify(monthData, null, '  ')}</pre>
     return [
-      <div>
-        <LineChart responsive width={800} height={400} data={monthData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
-          <YAxis tickFormatter={formatBigDollarValue} />
-          <Tooltip formatter={(value) => value.toLocaleString("en-US", {
-            style: "currency",
-            currency: "USD", maximumFractionDigits: 2
-          })} />
-          <Legend />
-          {
-            displayedSeries.map((series, idx) =>
-              <Line key={series} dataKey={series} stroke={colors[idx % colors.length]} />)
-          }</LineChart>
-      </div>,
-      <div>
-        <BarChart responsive width={800} height={400} data={totalData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <Tooltip formatter={(value) => value.toLocaleString("en-US", {
-            style: "currency",
-            currency: "USD", maximumFractionDigits: 2
-          })} />
-          <XAxis stroke="#333" dataKey="name" fontSize={10} tickLine={true} />
-          <YAxis width="auto" tickFormatter={formatBigDollarValue} />
-          <Legend />
-          {
-            displayedSeries.map((series, idx) =>
-              <Bar stackId="a" key={series} dataKey={series} fill={colors[idx % colors.length]} />)
-          }</BarChart>
-      </div>
+      monthData,
+      totalData,
+      seriesNames
     ]
-  }, [data])
+  }, [data]);
+
+  const displayedSeries = useMemo(() => {
+    if (seriesNames.length === 0) return [];
+    return seriesNames.filter(name => name !== 'name').slice(0, 10);
+  }, [seriesNames]);
 
   return (
     <>
@@ -192,8 +155,8 @@ function App() {
       <InvoiceLookup level="-1" label="Invoice" visible value={inv} onChange={setInv} searchParams={searchParams} />
       <SeriesPicker selected={series} onChange={setSeries} />
       {error ? <b>{error.message}</b> : null}
-      {monthlyChart}
-      {totalChart}
+      <MonthlyChart data={monthlyData} series={displayedSeries} />
+      <TotalChart data={totalData} series={displayedSeries} />
       {isFetching ? 'Loading...' : 'Ready'}
 
     </>

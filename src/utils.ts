@@ -13,7 +13,35 @@ export const drillDownLevels = [
   'inv'
 ];
 
-export const formatBigDollarValue = (value: any): string => {
+export const colors = [
+  "#3366CC",
+  "#DC3912",
+  "#FF9900",
+  "#109618",
+  "#990099",
+  "#0099C6",
+  "#DD4477",
+  "#66AA00",
+  "#B82E2E",
+  "#316395",
+  "#994499",
+  "#22AA99",
+  "#AAAA11",
+  "#6633CC",
+  "#E67300",
+  "#8B0707",
+  "#651067",
+  "#329262",
+  "#5574A6",
+  "#3B3EAC"
+];
+
+export const formatCurrency = (value: any) => value.toLocaleString("en-US", {
+  style: "currency",
+  currency: "USD", maximumFractionDigits: 2
+});
+
+export const formatCurrencyAsUnit = (value: any): string => {
 
   let multiplier = 1;
   let unit = '';

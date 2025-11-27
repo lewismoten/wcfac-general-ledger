@@ -86,7 +86,7 @@ foreach($series as $name) {
             $seriesJoinPieces[] = "INNER JOIN COA_RE ON LEDGER.ACCOUNT_RE = COA_RE.ID";
             break;
         case 'dept':
-            $seriesColumnPieces[] = "COA_DEPT.Name";
+            $seriesColumnPieces[] = "LPAD(COA_DEPT.ID, 6, '0'), ': ', COA_DEPT.Name";
             $seriesJoinPieces[] = "INNER JOIN COA_DEPT ON COA_DEPT.ID = LEDGER.ACCOUNT_DEPT";
             break;
         case 'vend':
