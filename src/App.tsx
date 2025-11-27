@@ -121,7 +121,6 @@ function App() {
     seriesNames.sort((s1, s2) => {
       const v1 = totalData.find(d => d.name === s1)[s1];
       const v2 = totalData.find(d => d.name === s2)[s2];
-      console.log({ [s1]: v1, [s2]: v2, sort: v1 < v2 ? 1 : v1 > v2 ? -1 : 0 })
       return v1 < v2 ? 1 : v1 > v2 ? -1 : 0;
     });
 
