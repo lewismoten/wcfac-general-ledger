@@ -153,7 +153,7 @@ function App() {
           })} />
           <Legend />
           {
-            seriesNames.map((series, idx) =>
+            displayedSeries.map((series, idx) =>
               <Line key={series} dataKey={series} stroke={colors[idx % colors.length]} />)
           }</LineChart>
       </div>,
@@ -168,7 +168,7 @@ function App() {
           <YAxis width="auto" tickFormatter={formatBigDollarValue} />
           <Legend />
           {
-            seriesNames.map((series, idx) =>
+            displayedSeries.map((series, idx) =>
               <Bar stackId="a" key={series} dataKey={series} fill={colors[idx % colors.length]} />)
           }</BarChart>
       </div>
