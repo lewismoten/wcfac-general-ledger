@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { LineChart, Line, XAxis, YAxis, Legend } from 'recharts';
+import { LineChart, Bar, Line, XAxis, YAxis, Legend, Tooltip, CartesianGrid } from 'recharts';
 import { CoaLookup } from './CoaLookup';
 import { FyLookup } from './FyLookup';
 import { InvoiceLookup } from './InvoiceLookup';
@@ -93,16 +93,20 @@ function App() {
     if (!data) return [null, null];
 
     const monthData: any[] = [];
-    const totalData: any[] = [{ name: 'total' }];
+    const totalData: any[] = [];
+    const totalData2: any[] = [{ name: 'total' }];
     const seriesNames: string[] = [];
 
     for (let i = 0; i < data.length; i++) {
       const { series, point, value, pointOrder } = data[i];
       if (!seriesNames.includes(series)) {
         seriesNames.push(series);
-        totalData[0][series] = value;
+        totalData.push({ name: series, [series]: [value] });
+        totalData2[0][series] = value;
       } else {
-        totalData[0][series] += value;
+        const o = totalData.find(d => d.name === series)!;
+        o[series] = parseFloat(o[series]) + value;
+        totalData2[0][series] = parseFloat(totalData2[0][series]) + value;
       }
       let idx = monthData.findIndex(d => d.name === point);
       if (idx === -1) {
@@ -114,7 +118,7 @@ function App() {
       } else {
         let x = monthData[idx];
         if (series in x) {
-          x[series] += value;
+          x[series] = parseFloat(x[series]) + value;
         } else {
           x[series] = value;
         }
@@ -123,6 +127,11 @@ function App() {
     }
     monthData.sort((x1, x2) => x1.sort > x2.sort ? 1 : x1.sort < x2.sort ? -1 : 0);
 
+    totalData.forEach((data) => {
+      const value = data[data.name] as number;
+      console.log('value', value, Math.round(value * 100) * 0.01);
+      data[data.name] = Math.round(value * 100) * 0.01;
+    });
     const formatTickY = (data: any[]) => {
 
       const maxValue = data.reduce((max, point) => Object.keys(point)
@@ -166,7 +175,7 @@ function App() {
     // <pre>{JSON.stringify(monthData, null, '  ')}</pre>
     return [
       <div>
-        <LineChart width={800} height={400} data={monthData}>
+        <LineChart responsive width={800} height={400} data={monthData}>
           <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
           <YAxis tickFormatter={formatTickY(monthData)} />
           <Legend />
@@ -176,13 +185,15 @@ function App() {
           }</LineChart>
       </div>,
       <div>
-        <LineChart width={400} height={400} data={totalData}>
+        <LineChart responsive width={800} height={400} data={totalData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <Tooltip />
           <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
-          <YAxis tickFormatter={formatTickY(totalData)} />
+          <YAxis width="auto" tickFormatter={formatTickY(totalData)} />
           <Legend />
           {
             seriesNames.map((series, idx) =>
-              <Line key={series} dataKey={series} stroke={colors[idx % colors.length]} />)
+              <Bar stackId="a" key={series} dataKey={series} fill={colors[idx % colors.length]} />)
           }</LineChart>
       </div>
     ]
