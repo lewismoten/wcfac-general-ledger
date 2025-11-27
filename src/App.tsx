@@ -175,6 +175,7 @@ function App() {
     return [
       <div>
         <LineChart responsive width={800} height={400} data={monthData}>
+          <CartesianGrid strokeDasharray="3 3" />
           <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
           <YAxis tickFormatter={formatTickY(monthData)} />
           <Tooltip formatter={(value) => value.toLocaleString("en-US", {
