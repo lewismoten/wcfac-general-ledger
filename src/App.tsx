@@ -129,7 +129,6 @@ function App() {
 
     totalData.forEach((data) => {
       const value = data[data.name] as number;
-      console.log('value', value, Math.round(value * 100) * 0.01);
       data[data.name] = Math.round(value * 100) * 0.01;
     });
     const formatTickY = (data: any[]) => {
