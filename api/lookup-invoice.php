@@ -136,7 +136,7 @@ if(is_filtered($acct)) {
 if(is_filtered($vend)) {
     $where .= " AND LEDGER.VENDOR_ID = ?";
     $types .= "i";
-    $params[] = intval($vent);
+    $params[] = intval($vend);
 }
 if(is_filtered_s($inv1)) {
     $where .= " AND INVOICE_NO_1 = ?";

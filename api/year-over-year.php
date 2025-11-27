@@ -3,6 +3,13 @@ error_reporting(E_ALL);
 ini_set('display_errors', '0');
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
+$sql = "";
+$types = '';
+$params = [];
+$seriesColumn = '';
+$seriesColumnPieces = [];
+
+try {
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
@@ -66,13 +73,8 @@ function is_filtered_multi($values) {
     return true;
 }
 
-$types = '';
-$params = [];
-
 $fiscalYearLabel = "'FY', CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END";
-$seriesColumn = '';
 $seriesJoin = '';
-$seriesColumnPieces = [];
 $seriesJoinPieces = [];
 
 $seriesParts = [];
@@ -123,11 +125,11 @@ foreach($series as $name) {
             break;
     }
 }
-if(sizeof($seriesColumnPieces) > 0) {
-    $seriesColumn = implode(", ' ', ", $seriesColumnPieces);
-} else {
-    $seriesColumn = $fiscalYearLabel;
+if(sizeof($seriesColumnPieces) === 0) {
+    $seriesColumnPieces[] = $fiscalYearLabel;
 }
+$seriesColumn = implode(", ' ', ", $seriesColumnPieces);
+
 if(sizeof($seriesJoinPieces) > 0) {
     $seriesJoin = implode(' ', $seriesJoinPieces);
 } else {
@@ -158,8 +160,6 @@ if(is_filtered($acct)) {
 }
 if(is_filtered($vend)) {
     $filter .= " AND LEDGER.VENDOR_ID = ".intval($vend);
-    $seriesColumn = "";
-    $seriesJoin = "";
 }
 if(is_filtered($inv)) {
     $filter .= " AND LEDGER.INVOICE_NO = ?";
@@ -190,7 +190,7 @@ $fromWhere = "FROM LEDGER
         $seriesJoin
         $filter
         GROUP BY 
-            CONCAT($seriesColumn),
+            CONCAT('', $seriesColumn),
             DATE_FORMAT(CHECK_DATE, '%M'),
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END
         ";
@@ -226,14 +226,14 @@ $stmt->free_result();
 $stmt->close();
 
 $sql = "SELECT 
-            CONCAT($seriesColumn) AS `series`,
+            CONCAT('', $seriesColumn) AS `series`,
             DATE_FORMAT(CHECK_DATE, '%M') AS `point`,
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END AS `pointOrder`,
             SUM(NET_AMOUNT) AS `value`
         $fromWhere
         ORDER BY
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END ASC,
-            CONCAT($seriesColumn) ASC
+            CONCAT('', $seriesColumn) ASC
         LIMIT 1200";
 // echo $sql;
 $sqlselect = $sql;
@@ -288,3 +288,17 @@ echo json_encode([
         "select" => $sqlselect
     ]
 ], JSON_PRETTY_PRINT);
+} catch(mysqli_sql_exception $e) {
+    error_log($e->getMessage());
+    echo json_encode([
+    "error" => 'SQL Exception',
+    "details" => $e->getMessage(),
+    "sql" => $sql,
+    "types" => $types,
+    "params" => $params,
+    "state" => $e->getSqlState(),
+    "seriesColumnPieces" => $seriesColumnPieces,
+    "seriesColumn" => $seriesColumn
+], JSON_PRETTY_PRINT);
+    exit;
+}

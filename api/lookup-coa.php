@@ -168,7 +168,7 @@ $sql = "SELECT DISTINCT
         $where
         ORDER BY
             `$table`.ID ASC
-        LIMIT 500";
+        LIMIT 1500";
 
 $stmt = $conn->prepare($sql);
 if(!$stmt) {
