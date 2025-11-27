@@ -18,19 +18,20 @@ export const formatBigDollarValue = (value: any): string => {
   let multiplier = 1;
   let unit = '';
   let maximumFractionDigits = 2;
+  let absValue = Math.abs(value);
 
-  if (value >= 1000000) {
+  if (absValue >= 1000000) {
     multiplier = 0.000001;
     unit = 'M';
-    if (value > 10000000) {
+    if (absValue > 10000000) {
       maximumFractionDigits = 0;
     } else {
       maximumFractionDigits = 1;
     }
-  } else if (value >= 1000) {
+  } else if (absValue >= 1000) {
     multiplier = 0.001;
     unit = 'K';
-    if (value > 10000) {
+    if (absValue > 10000) {
       maximumFractionDigits = 0;
     } else {
       maximumFractionDigits = 1;
