@@ -20,6 +20,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@fontsource/roboto": "^5.2.9",
     "@mui/material": "^7.3.5",
     "@mui/system": "^7.3.5",
     "basic-ftp": "^5.0.5",
@@ -27,7 +28,7 @@
     "csv-writer": "^1.6.0",
     "install": "^0.13.0",
     "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
-    "react-dom": "^19.1.1"
+    "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
