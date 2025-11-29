@@ -6,6 +6,7 @@ import { InvoiceLookup } from './InvoiceLookup';
 import { SeriesPicker } from './SeriesPicker';
 import { MonthlyChart } from './MonthlyChart';
 import { TotalChart } from './TotalChart';
+import { Paginator } from './Paginator';
 
 
 
@@ -24,6 +25,8 @@ function App() {
   const [inv2, setInv2] = useState("-1");
   const [inv3, setInv3] = useState("-1");
   const [series, setSeries] = useState(['fy']);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize, setPageSize] = useState(1200);
 
   const searchParams = useMemo(() => {
     const params = new URLSearchParams({
@@ -33,7 +36,9 @@ function App() {
       acct,
       vend,
       inv, inv1, inv2, inv3,
-      series: series.join(',')
+      series: series.join(','),
+      pg: pageNumber.toString(),
+      ps: pageSize.toString()
     });
     if (params.get('fy') === '-1') params.delete('fy');
     if (params.get('re') !== '4' && params.get('re') !== '-1') {
@@ -56,14 +61,31 @@ function App() {
     if (params.get('inv2') === '-1') params.delete('inv2');
     if (params.get('inv3') === '-1') params.delete('inv3');
     if (params.get('series') === '') params.delete('series');
-
+    if (params.get('pg') === '1') params.delete('pg');
+    if (params.get('ps') === '1200') params.delete('ps');
     return params.toString();
-  }, [fy, re, ol1, ol1Func, ol2, dept, acct, vend, inv, inv1, inv2, inv3, series])
+  }, [
+    fy,
+    re,
+    ol1,
+    ol1Func,
+    ol2,
+    dept,
+    acct,
+    vend,
+    inv,
+    inv1,
+    inv2,
+    inv3,
+    series,
+    pageNumber,
+    pageSize
+  ]);
+
   const { isFetching, data, error } = useQuery<{ count: number, rows: { series: string, point: string, value: number, pointOrder: number }[] }>({
     queryKey: ['chartData', searchParams],
     placeholderData: keepPreviousData,
     queryFn: async () => {
-
       const res = await fetch(`/api/year-over-year.php?${searchParams}`);
       return res.json().then(data => ({
         count: data.count,
@@ -166,6 +188,7 @@ function App() {
       {error ? <b>{error.message}</b> : null}
       {isPaged ? `Paged.` : null}
       <div>Showing {visibleCount} of {totalCount}.</div>
+      <Paginator pageNumber={pageNumber} pageSize={pageSize} setPageNumber={setPageNumber} totalCount={totalCount} setPageSize={setPageSize} />
       <MonthlyChart data={monthlyData} series={displayedSeries} />
       <TotalChart data={totalData} series={displayedSeries} />
       {isFetching ? 'Loading...' : 'Ready'}
