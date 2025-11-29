@@ -1,22 +1,16 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', '0');
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+include './helpers.php';
 
 $sql = "";
 $types = '';
 $params = [];
 $seriesColumn = '';
 $seriesColumnPieces = [];
+$offset = 0;
+$pageNumber = 0;
+$pageSize = 0;
 
 try {
-header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
 
 $fy = isset($_GET['fy']) ? $_GET['fy'] : '';
 $re = isset($_GET['re']) ? $_GET['re'] : '';
@@ -31,6 +25,22 @@ $inv1 = isset($_GET['inv1']) ? $_GET['inv1'] : '';
 $inv2 = isset($_GET['inv2']) ? $_GET['inv2'] : '';
 $inv3 = isset($_GET['inv3']) ? $_GET['inv3'] : '';
 $series = isset($_GET['series']) ? explode(',', $_GET['series']) : ['fy'];
+$pageNumber = isset($_GET['pg']) ? $_GET['pg'] : '1';
+$pageSize = isset($_GET['ps']) ? $_GET['ps'] : '1200';
+
+if(is_filtered($pageNumber)) {
+    $pageNumber =intval($pageNumber);
+    if($pageNumber < 1) $pageNumber = 1;
+} else {
+    $pageNumber = 1;
+}
+if(is_filtered($pageSize)) {
+    $pageSize = intval($pageSize);
+    if($pageSize < 1) $pageSize = 1;
+    if($pageSize > 10000) {
+        $pageSize = 10000;
+    }
+}
 
 $config = require "config.php";
 $db = $config["db"];
@@ -57,21 +67,6 @@ if ($conn->connect_error) {
 $conn->set_charset($db["charset"] ?? "utf8");
 
 $filter = '';
-function is_filtered($value) {
-   return $value  !== '' && $value !== null && is_numeric($value) && $value != '-1';
-}
-function is_filtered_multi($values) {
-   if($values  == '' || $values == null || $values == '-1') return false;
-   if(is_numeric($values)) return true;
-   $parts = explode(',', $values);
-    foreach ($parts as $p) {
-        $p = trim($p);
-        if ($p === '' || !is_numeric($p)) {
-            return false;
-        }
-    }
-    return true;
-}
 
 $fiscalYearLabel = "'FY', CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END";
 $seriesJoin = '';
@@ -84,16 +79,16 @@ foreach($series as $name) {
             $seriesColumnPieces[] = $fiscalYearLabel;
             break;
         case 're':
-            $seriesColumnPieces[] = "COA_RE.Name";
-            $seriesJoinPieces[] = "INNER JOIN COA_RE ON LEDGER.ACCOUNT_RE = COA_RE.ID";
+            $seriesColumnPieces[] = "IFNULL(COA_RE.Name, '[No RE]')";
+            $seriesJoinPieces[] = "LEFT OUTER JOIN COA_RE ON LEDGER.ACCOUNT_RE = COA_RE.ID";
             break;
         case 'dept':
-            $seriesColumnPieces[] = "LPAD(COA_DEPT.ID, 6, '0'), ': ', COA_DEPT.Name";
-            $seriesJoinPieces[] = "INNER JOIN COA_DEPT ON COA_DEPT.ID = LEDGER.ACCOUNT_DEPT";
+            $seriesColumnPieces[] = "IFNULL(CONCAT(LPAD(COA_DEPT.ID, 6, '0'), ': ', COA_DEPT.Name), '[No Dept]')";
+            $seriesJoinPieces[] = "LEFT OUTER JOIN COA_DEPT ON COA_DEPT.ID = LEDGER.ACCOUNT_DEPT";
             break;
         case 'vend':
-            $seriesColumnPieces[] = "LPAD(VENDOR.ID, 6, '0'), ': ', VENDOR.Name";
-            $seriesJoinPieces[] = "INNER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID";
+            $seriesColumnPieces[] = "IFNULL(CONCAT(LPAD(VENDOR.ID, 6, '0'), ': ', VENDOR.Name), '[No Vendor]')";
+            $seriesJoinPieces[] = "LEFT OUTER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID";
             break;
         case 'ol1':
             $seriesColumnPieces[] = "IFNULL(CONCAT(LPAD(COA_OL1.ID, 1, '0'), ': ', COA_OL1.Name), '[No OL1]')";
@@ -108,8 +103,8 @@ foreach($series as $name) {
             $seriesJoinPieces[] = "LEFT OUTER JOIN COA_OL2 ON COA_OL2.ID = LEDGER.ACCOUNT_OL2";
             break;
         case 'acct':
-            $seriesColumnPieces[] = "LPAD(COA_ACCT.ID, 5, '0'), ': ', COA_ACCT.Name";
-            $seriesJoinPieces[] = "INNER JOIN COA_ACCT ON COA_ACCT.ID = LEDGER.ACCOUNT_NO";
+            $seriesColumnPieces[] = "IFNULL(CONCAT(LPAD(COA_ACCT.ID, 5, '0'), ': ', COA_ACCT.Name), '[No Account]')";
+            $seriesJoinPieces[] = "LEFT OUTER JOIN COA_ACCT ON COA_ACCT.ID = LEDGER.ACCOUNT_NO";
             break;
         case 'inv':
             $seriesColumnPieces[] = "IFNULL(LEDGER.INVOICE_NO, '[No Invoice]')";
@@ -161,22 +156,22 @@ if(is_filtered($acct)) {
 if(is_filtered($vend)) {
     $filter .= " AND LEDGER.VENDOR_ID = ".intval($vend);
 }
-if(is_filtered($inv)) {
+if(is_filtered_s($inv)) {
     $filter .= " AND LEDGER.INVOICE_NO = ?";
     $types .= 's';
     $params[] = $inv;
 }
-if(is_filtered($inv1)) {
+if(is_filtered_s($inv1)) {
     $filter .= " AND LEDGER.INVOICE_NO_1 = ?";
     $types .= 's';
     $params[] = $inv1;
 }
-if(is_filtered($inv2)) {
+if(is_filtered_s($inv2)) {
     $filter .= " AND LEDGER.INVOICE_NO_2 = ?";
     $types .= 's';
     $params[] = $inv2;
 }
-if(is_filtered($inv3)) {
+if(is_filtered_s($inv3)) {
     $filter .= " AND LEDGER.INVOICE_NO_3 = ?";
     $types .= 's';
     $params[] = $inv3;
@@ -225,6 +220,12 @@ $stmt->fetch();
 $stmt->free_result();
 $stmt->close();
 
+// is count less than page? set to last good page
+if(($pageSize * $pageNumber)-1 > $count) {
+    $pageNumber = ceil($count / $pageSize);
+}
+$offset = (($pageNumber -1) * $pageSize);
+
 $sql = "SELECT 
             CONCAT('', $seriesColumn) AS `series`,
             DATE_FORMAT(CHECK_DATE, '%M') AS `point`,
@@ -234,7 +235,8 @@ $sql = "SELECT
         ORDER BY
             CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%m') - 6 ELSE DATE_FORMAT(CHECK_DATE, '%m') + 6 END ASC,
             CONCAT('', $seriesColumn) ASC
-        LIMIT 1200";
+        LIMIT $pageSize
+        OFFSET $offset";
 // echo $sql;
 $sqlselect = $sql;
 $stmt = $conn->prepare($sql);
@@ -283,6 +285,9 @@ $conn->close();
 echo json_encode([
     "rows" => $rows,
     "count" => $count,
+    "pageNumber" => $pageNumber,
+    "pageSize" => $pageSize,
+    "offset" => $offset,
     "sql" => [
         "count" => $sqlcount,
         "select" => $sqlselect
