@@ -13,6 +13,9 @@
     "convert-chart-of-accounts": "node ./utils/convertChartOfAccounts.js",
     "convert-ap-register": "node ./utils/convertApRegister.js"
   },
+  "peerDependencies": {
+    "react": "^17.0.0 || ^18.0.0 || ^19.0.0"
+  },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
