@@ -28,3 +28,15 @@ function is_filtered_multi($values) {
     }
     return true;
 }
+function is_filtered_multi_s($values) {
+   if($values  == '' || $values == null || $values == '-1') return false;
+   if(is_numeric($values)) return true;
+   $parts = explode(',', $values);
+    foreach ($parts as $p) {
+        $p = trim($p);
+        if ($p === '') {
+            return false;
+        }
+    }
+    return true;
+}
