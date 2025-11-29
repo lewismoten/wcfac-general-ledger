@@ -1,8 +1,10 @@
-import { useCallback, useMemo, type ChangeEvent, type ReactNode } from 'react'
+import { useCallback, useMemo, type ReactNode, type SyntheticEvent } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { drillDownLevels } from './utils';
+import TextField from '@mui/material/TextField';
+import Autocomplete, { type AutocompleteChangeDetails, type AutocompleteChangeReason } from '@mui/material/Autocomplete';
 
-export const InvoiceLookup = ({ level, value = "-1", onChange, visible = true, label, searchParams }: { label: string, level: string, value: string, onChange: (id: string) => void, visible?: boolean, searchParams: string }): ReactNode => {
+export const InvoiceLookup = ({ level, values = [], onChange, visible = true, label, searchParams }: { label: string, level: string, values: string[], onChange: (ids: string[]) => void, visible?: boolean, searchParams: string }): ReactNode => {
 
   const params = useMemo(() => {
     const params = new URLSearchParams(searchParams);
@@ -18,7 +20,7 @@ export const InvoiceLookup = ({ level, value = "-1", onChange, visible = true, l
     return params.toString();
   }, [searchParams]);
 
-  const { isFetching, error, data } = useQuery({
+  const { data } = useQuery({
     queryKey: [`invoice`, level, params],
     enabled: true,
     placeholderData: keepPreviousData,
@@ -27,30 +29,29 @@ export const InvoiceLookup = ({ level, value = "-1", onChange, visible = true, l
       return res.json();
     }
   });
+  const changeSelected = useCallback((
+    _event: SyntheticEvent<Element, Event>,
+    value: { id: string; name: string; }[],
+    _reason: AutocompleteChangeReason,
+    _details?: AutocompleteChangeDetails<{ id: string; name: string; }> | undefined
+  ): void => {
+    const selectedValues = value.map(v => v.id).sort();
+    if (selectedValues.join(',') !== values.join(',')) {
+      onChange(selectedValues);
+    };
+  }, [onChange, values]);
 
-  const options = useMemo(() => {
-    if (!data) {
-      if (isFetching) return <option>Fetching</option>;
-      if (error) return <option>Error</option>;
-      return <option>No Data</option>;
-    }
-    let found = false;
-    const o = [{ id: "-1", name: "All" }, ...data].map(({ id, name }) => {
-      if (!found && id.toString() === value.toString()) found = true;
-      return (
-        <option value={id} key={id} selected={value.toString() === id.toString()}>{name}</option>
-      )
-    });
-    if (!found && value !== "-1") onChange("-1");
-    return o;
-  }, [data, error, isFetching, value, onChange])
+  if (!visible) return null;
 
-  const changeSelected = useCallback((event: ChangeEvent<HTMLSelectElement>): void => {
-    const selectedValue = event.currentTarget.selectedOptions[0].value ?? value;
-    if (selectedValue !== value)
-      onChange(selectedValue);
-  }, [onChange, value]);
-
-  return visible ? <div>{label}<select onChange={changeSelected}>{options}</select></div> : null;
+  return <Autocomplete
+    multiple
+    options={data ?? []}
+    getOptionLabel={(option) => option.name}
+    onChange={changeSelected}
+    renderInput={(params) => (
+      <TextField {...params} label={label} />
+    )}
+    sx={{ width: '500px' }}
+  />
 
 }

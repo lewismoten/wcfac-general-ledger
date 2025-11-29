@@ -13,53 +13,61 @@ import { Paginator } from './Paginator';
 
 function App() {
   const [fy, setFy] = useState(["-1"]);
-  const [re, setRe] = useState("-1");
-  const [ol1, setOl1] = useState("-1");
-  const [ol1Func, setOl1Func] = useState("-1");
-  const [ol2, setOl2] = useState("-1");
-  const [dept, setDept] = useState("-1");
-  const [acct, setAcct] = useState("-1");
-  const [vend, setVend] = useState("-1");
-  const [inv, setInv] = useState("-1");
-  const [inv1, setInv1] = useState("-1");
-  const [inv2, setInv2] = useState("-1");
-  const [inv3, setInv3] = useState("-1");
+  const [re, setRe] = useState<string[]>([]);
+  const [ol1, setOl1] = useState<string[]>([]);
+  const [ol1Func, setOl1Func] = useState<string[]>([]);
+  const [ol2, setOl2] = useState<string[]>([]);
+  const [dept, setDept] = useState<string[]>([]);
+  const [acct, setAcct] = useState<string[]>([]);
+  const [vend, setVend] = useState<string[]>([]);
+  const [inv, setInv] = useState<string[]>([]);
+  const [inv1, setInv1] = useState<string[]>([]);
+  const [inv2, setInv2] = useState<string[]>([]);
+  const [inv3, setInv3] = useState<string[]>([]);
   const [series, setSeries] = useState(['fy']);
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(1200);
 
+  const showRevenueFields = useMemo(() => re.length === 0 || re.includes('4'), [re]);
+
   const searchParams = useMemo(() => {
     const params = new URLSearchParams({
       fy: fy.join(","),
-      re,
-      ol1, ol1Func, ol2, dept,
-      acct,
-      vend,
-      inv, inv1, inv2, inv3,
+      re: re.join(","),
+      ol1: ol1.join(","),
+      ol1Func: ol1Func.join(","),
+      ol2: ol2.join(","),
+      dept: dept.join(","),
+      acct: acct.join(","),
+      vend: vend.join(","),
+      inv: inv.join(","),
+      inv1: inv1.join(","),
+      inv2: inv2.join(","),
+      inv3: inv3.join(","),
       series: series.join(','),
       pg: pageNumber.toString(),
       ps: pageSize.toString()
     });
     if (params.get('fy') === '-1') params.delete('fy');
-    if (params.get('re') !== '4' && params.get('re') !== '-1') {
+    if (showRevenueFields) {
+      if (params.get('ol1') === '') params.delete('ol1');
+      if (params.get('ol1Func') === '') params.delete('ol1Func');
+      if (params.get('ol2') === '') params.delete('ol2');
+      if (params.get('dept') === '') params.delete('dept');
+    } else {
       params.delete('ol1');
       params.delete('ol1Func');
       params.delete('ol2');
       params.delete('dept');
-    } else {
-      if (params.get('ol1') === '-1') params.delete('ol1');
-      if (params.get('ol1Func') === '-1') params.delete('ol1Func');
-      if (params.get('ol2') === '-1') params.delete('ol2');
-      if (params.get('dept') === '-1') params.delete('dept');
     }
-    if (params.get('re') === '-1') params.delete('re');
-    if (params.get('acct') === '-1') params.delete('acct');
-    if (params.get('vend') === '-1') params.delete('vend');
+    if (params.get('re') === '') params.delete('re');
+    if (params.get('acct') === '') params.delete('acct');
+    if (params.get('vend') === '') params.delete('vend');
 
-    if (params.get('inv') === '-1') params.delete('inv');
-    if (params.get('inv1') === '-1') params.delete('inv1');
-    if (params.get('inv2') === '-1') params.delete('inv2');
-    if (params.get('inv3') === '-1') params.delete('inv3');
+    if (params.get('inv') === '') params.delete('inv');
+    if (params.get('inv1') === '') params.delete('inv1');
+    if (params.get('inv2') === '') params.delete('inv2');
+    if (params.get('inv3') === '') params.delete('inv3');
     if (params.get('series') === '') params.delete('series');
     if (params.get('pg') === '1') params.delete('pg');
     if (params.get('ps') === '1200') params.delete('ps');
@@ -79,7 +87,8 @@ function App() {
     inv3,
     series,
     pageNumber,
-    pageSize
+    pageSize,
+    showRevenueFields
   ]);
 
   const { isFetching, data, error } = useQuery<{ count: number, rows: { series: string, point: string, value: number, pointOrder: number }[] }>({
@@ -173,17 +182,17 @@ function App() {
     <>
       <h1>General Ledger</h1>
       <FyLookup name='fy' label="Fiscal Year" values={fy} onChange={setFy} />
-      <CoaLookup name='re' label="R/E" value={re} onChange={setRe} searchParams={searchParams} />
-      <CoaLookup name='ol1' label="OL1" visible={re === "-1" || re === "4"} value={ol1} onChange={setOl1} searchParams={searchParams} />
-      <CoaLookup name='ol1Func' label="Function" visible={re === "-1" || re === "4"} value={ol1Func} onChange={setOl1Func} searchParams={searchParams} />
-      <CoaLookup name='ol2' label="OL2" visible={re === "-1" || re === "4"} value={ol2} onChange={setOl2} searchParams={searchParams} />
-      <CoaLookup name='dept' label="Department" visible={re === "-1" || re === "4"} value={dept} onChange={setDept} searchParams={searchParams} />
-      <CoaLookup name='acct' label="Account" visible value={acct} onChange={setAcct} searchParams={searchParams} />
-      <CoaLookup name='vend' label="Vendor" visible value={vend} onChange={setVend} searchParams={searchParams} />
-      <InvoiceLookup level="1" label="Invoice[1]" visible value={inv1} onChange={setInv1} searchParams={searchParams} />
-      <InvoiceLookup level="2" label="Invoice[2]" visible value={inv2} onChange={setInv2} searchParams={searchParams} />
-      <InvoiceLookup level="3" label="Invoice[3]" visible value={inv3} onChange={setInv3} searchParams={searchParams} />
-      <InvoiceLookup level="-1" label="Invoice" visible value={inv} onChange={setInv} searchParams={searchParams} />
+      <CoaLookup name='re' label="R/E" values={re} onChange={setRe} searchParams={searchParams} />
+      <CoaLookup name='ol1' label="OL1" visible={showRevenueFields} values={ol1} onChange={setOl1} searchParams={searchParams} />
+      <CoaLookup name='ol1Func' label="Function" visible={showRevenueFields} values={ol1Func} onChange={setOl1Func} searchParams={searchParams} />
+      <CoaLookup name='ol2' label="OL2" visible={showRevenueFields} values={ol2} onChange={setOl2} searchParams={searchParams} />
+      <CoaLookup name='dept' label="Department" visible={showRevenueFields} values={dept} onChange={setDept} searchParams={searchParams} />
+      <CoaLookup name='acct' label="Account" visible values={acct} onChange={setAcct} searchParams={searchParams} />
+      <CoaLookup name='vend' label="Vendor" visible values={vend} onChange={setVend} searchParams={searchParams} />
+      <InvoiceLookup level="1" label="Invoice[1]" visible values={inv1} onChange={setInv1} searchParams={searchParams} />
+      <InvoiceLookup level="2" label="Invoice[2]" visible values={inv2} onChange={setInv2} searchParams={searchParams} />
+      <InvoiceLookup level="3" label="Invoice[3]" visible values={inv3} onChange={setInv3} searchParams={searchParams} />
+      <InvoiceLookup level="-1" label="Invoice" visible values={inv} onChange={setInv} searchParams={searchParams} />
       <SeriesPicker selected={series} onChange={setSeries} />
       {error ? <b>{error.message}</b> : null}
       {isPaged ? `Paged.` : null}

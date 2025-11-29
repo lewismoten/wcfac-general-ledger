@@ -1,6 +1,6 @@
 import { CartesianGrid, Legend, Bar, BarChart, Tooltip, XAxis, YAxis } from "recharts"
 import { colors, formatCurrencyAsUnit, formatCurrency } from "./utils"
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 
 export const TotalChart = ({ data, series }: { data: any[], series: string[] }) => {
 
@@ -10,9 +10,6 @@ export const TotalChart = ({ data, series }: { data: any[], series: string[] }) 
       .sort((r1, r2) => series.indexOf(r1.name) - series.indexOf(r2.name))
     , [data, series]);
 
-  useEffect(() => {
-    console.log('total paged', series, localData);
-  }, [localData]);
   return <BarChart responsive width={800} height={400} data={localData}>
     <CartesianGrid strokeDasharray="3 3" />
     <Tooltip formatter={formatCurrency} />
