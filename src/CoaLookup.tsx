@@ -48,6 +48,8 @@ export const CoaLookup = ({ name, values = [], onChange, visible = true, label, 
     options={data ?? []}
     getOptionLabel={(option) => option.name}
     onChange={changeSelected}
+    value={values.map(id => ({ id, name: data?.find(d => d.id === id)?.name ?? id }))}
+    isOptionEqualToValue={(option, value) => option.id === value.id}
     renderInput={(params) => (
       <TextField {...params} label={label} />
     )}

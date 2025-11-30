@@ -20,7 +20,7 @@ export const InvoiceLookup = ({ level, values = [], onChange, visible = true, la
     return params.toString();
   }, [searchParams]);
 
-  const { data } = useQuery({
+  const { data } = useQuery<{ id: string, name: string }[]>({
     queryKey: [`invoice`, level, params],
     enabled: true,
     placeholderData: keepPreviousData,
@@ -48,6 +48,8 @@ export const InvoiceLookup = ({ level, values = [], onChange, visible = true, la
     options={data ?? []}
     getOptionLabel={(option) => option.name}
     onChange={changeSelected}
+    value={values.map(id => ({ id, name: data?.find(d => d.id === id)?.name ?? id }))}
+    isOptionEqualToValue={(option, value) => option.id === value.id}
     renderInput={(params) => (
       <TextField {...params} label={label} />
     )}
