@@ -87,7 +87,7 @@ foreach($series as $name) {
             $seriesJoinPieces[] = "LEFT OUTER JOIN COA_DEPT ON COA_DEPT.ID = LEDGER.ACCOUNT_DEPT";
             break;
         case 'vend':
-            $seriesColumnPieces[] = "IFNULL(CONCAT(LPAD(VENDOR.ID, 6, '0'), ': ', VENDOR.Name), '[No Vendor]')";
+            $seriesColumnPieces[] = "IFNULL(CONCAT(LPAD(VENDOR.Num, 6, '0'), ': ', VENDOR.Name), '[No Vendor]')";
             $seriesJoinPieces[] = "LEFT OUTER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID";
             break;
         case 'ol1':
