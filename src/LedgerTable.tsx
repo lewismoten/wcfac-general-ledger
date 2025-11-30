@@ -25,6 +25,15 @@ interface Data {
   batchNo: number
 }
 
+interface ApiError {
+  error: string,
+  details: string,
+  sql?: string,
+  types?: string,
+  params?: any[],
+  state?: string
+}
+
 interface ColumnData {
   dataKey: keyof Data;
   label: string;
@@ -175,10 +184,10 @@ export const LedgerTable = ({ searchParams = "" }: { searchParams: string }) => 
     if (params.has('ps')) params.delete('ps');
     return params.toString();
   }, [searchParams]);
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<LedgerPage>({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<LedgerPage | ApiError>({
     queryKey: ['legerData', localParams],
     initialPageParam: 1,
-    getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
+    getNextPageParam: (lastPage) => "error" in lastPage ? undefined : lastPage.nextPage ?? undefined,
     queryFn: async ({ pageParam }) => {
       const base = localParams ? `${localParams}&` : "";
       const PAGE_SIZE = 100;
@@ -187,7 +196,7 @@ export const LedgerTable = ({ searchParams = "" }: { searchParams: string }) => 
     }
   });
   const rows: Data[] = useMemo(() =>
-    data?.pages.flatMap(page => page.rows) ?? []
+    data?.pages.flatMap(page => "error" in page ? [] : page.rows) ?? []
     , [data]
   );
   return <Paper style={{ height: 400, width: '100%' }}>

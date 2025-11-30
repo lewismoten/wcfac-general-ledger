@@ -4,6 +4,9 @@ include './helpers.php';
 $sql = "";
 $types = '';
 $params = [];
+$medianNet = -1;
+$maxNet = 0;
+$minNet = 0;
 
 try {
 
@@ -155,7 +158,10 @@ if(is_filtered_multi_s($inv3)) {
 if($filter != '') {
     $filter = "WHERE 1=1 $filter";
 }
-$sql = "SELECT COUNT(1)
+$sql = "SELECT 
+            COUNT(1),
+            MAX(LEDGER.NET_AMOUNT) as `MaxNet`,
+            MIN(LEDGER.NET_AMOUNT) as `MinNet`
         FROM LEDGER
             LEFT OUTER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID
             $filter";
@@ -183,7 +189,48 @@ if(!$stmt->execute()) {
   ]);
     exit;
 }
-$stmt->bind_result($count);
+$stmt->bind_result($count, $maxNet, $minNet);
+$stmt->fetch();
+$stmt->free_result();
+$stmt->close();
+
+$medianLimit = ($count % 2 === 0) ? 2 : 1;
+$medianOffset = (int)floor(($count - 1) / 2);
+
+$sql = "SELECT AVG(sub.NET_AMOUNT) AS `MedianNet`
+FROM (
+    SELECT LEDGER.NET_AMOUNT 
+    FROM LEDGER
+    LEFT OUTER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID 
+    $filter
+    ORDER BY NET_AMOUNT
+    LIMIT $medianLimit
+    OFFSET $medianOffset
+    ) AS sub";
+$stmt = $conn->prepare($sql);
+
+if(!$stmt) {
+  echo json_encode([
+      "error" => "Prepare statement failed",
+      "details" => $conn->error,
+      "sql" => $sql
+  ]);
+    exit;
+}
+
+if ($types !== '') {
+    $stmt->bind_param($types, ...$params);
+}
+
+if(!$stmt->execute()) {
+  echo json_encode([
+      "error" => "Query execution failed",
+      "details" => $conn->error,
+      "sql" => $sql
+  ]);
+    exit;
+}
+$stmt->bind_result($medianNet);
 $stmt->fetch();
 $stmt->free_result();
 $stmt->close();
@@ -265,7 +312,10 @@ if($pageCount > $pageNumber) $nextPage = $pageNumber + 1;
 echo json_encode([ 
     "rows" => $rows,
     "total" => $count,
-    "nextPage" => $nextPage
+    "nextPage" => $nextPage,
+    "maxNet" => $maxNet,
+    "minNet" => $minNet,
+    "medianNet" => $medianNet
 ], JSON_PRETTY_PRINT);
 } catch(mysqli_sql_exception $e) {
     error_log($e->getMessage());
