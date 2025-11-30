@@ -7,7 +7,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { TableVirtuoso, type TableComponents } from 'react-virtuoso';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 interface Data {
   id: number,
@@ -162,6 +162,11 @@ function rowContent(_index: number, row: Data) {
     </>
   );
 }
+type LedgerPage = {
+  rows: Data[],
+  nextPage: number | null;
+  total?: number
+}
 export const LedgerTable = ({ searchParams = "" }: { searchParams: string }) => {
   const localParams = useMemo(() => {
     const params = new URLSearchParams(searchParams);
@@ -170,20 +175,32 @@ export const LedgerTable = ({ searchParams = "" }: { searchParams: string }) => 
     if (params.has('ps')) params.delete('ps');
     return params.toString();
   }, [searchParams]);
-  const { data } = useQuery<Data[]>({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<LedgerPage>({
     queryKey: ['legerData', localParams],
-    placeholderData: keepPreviousData,
-    queryFn: async () => {
-      const res = await fetch(`/api/ledger.php?${localParams}`);
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
+    queryFn: async ({ pageParam }) => {
+      const base = localParams ? `${localParams}&` : "";
+      const PAGE_SIZE = 100;
+      const res = await fetch(`/api/ledger.php?${base}pg=${pageParam}&ps=${PAGE_SIZE}`);
       return res.json();
     }
   });
+  const rows: Data[] = useMemo(() =>
+    data?.pages.flatMap(page => page.rows) ?? []
+    , [data]
+  );
   return <Paper style={{ height: 400, width: '100%' }}>
     <TableVirtuoso
-      data={data ?? []}
+      data={rows ?? []}
       components={VirtuosoTableComponents}
       fixedHeaderContent={fixedHeaderContent}
       itemContent={rowContent}
+      endReached={() => {
+        if (hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      }}
     />
   </Paper>
 }

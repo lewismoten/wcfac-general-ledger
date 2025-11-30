@@ -19,7 +19,38 @@ $inv = isset($_GET['inv']) ? $_GET['inv'] : '';
 $inv1 = isset($_GET['inv1']) ? $_GET['inv1'] : '';
 $inv2 = isset($_GET['inv2']) ? $_GET['inv2'] : '';
 $inv3 = isset($_GET['inv3']) ? $_GET['inv3'] : '';
+$pageNumber = isset($_GET['pg']) ? $_GET['pg'] : '1';
+$pageSize = isset($_GET['ps']) ? $_GET['ps'] : '1200';
 
+if(is_filtered($pageNumber)) {
+    $pageNumber = intval($pageNumber);
+    if($pageNumber < 1) {
+        echo json_encode([
+            "error" => "Page number too low",
+            "details" => $conn->connect_error
+        ]);
+        exit;
+    }
+} else {
+    $pageNumber = 1;
+}
+if(is_filtered($pageSize)) {
+    $pageSize = intval($pageSize);
+    if($pageSize < 25) {
+        echo json_encode([
+            "error" => "Page size too small",
+            "details" => $conn->connect_error
+        ]);
+        exit;
+    }
+    if($pageSize > 500) {
+        echo json_encode([
+            "error" => "Page size too large",
+            "details" => $conn->connect_error
+        ]);
+        exit;
+    }
+}
 $config = require "config.php";
 $db = $config["db"];
 
@@ -124,6 +155,40 @@ if(is_filtered_multi_s($inv3)) {
 if($filter != '') {
     $filter = "WHERE 1=1 $filter";
 }
+$sql = "SELECT COUNT(1)
+        FROM LEDGER
+            LEFT OUTER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID
+            $filter";
+$sqlcount = $sql;
+$stmt = $conn->prepare($sql);
+
+if(!$stmt) {
+  echo json_encode([
+      "error" => "Prepare statement failed",
+      "details" => $conn->error,
+      "sql" => $sql
+  ]);
+    exit;
+}
+
+if ($types !== '') {
+    $stmt->bind_param($types, ...$params);
+}
+
+if(!$stmt->execute()) {
+  echo json_encode([
+      "error" => "Query execution failed",
+      "details" => $conn->error,
+      "sql" => $sql
+  ]);
+    exit;
+}
+$stmt->bind_result($count);
+$stmt->fetch();
+$stmt->free_result();
+$stmt->close();
+
+$pageOffset = (($pageNumber -1) * $pageSize);
 
 $sql = "SELECT
             LEDGER.ID as `id`,
@@ -145,7 +210,9 @@ $sql = "SELECT
         ORDER BY
             CHECK_DATE ASC,
             VENDOR.Num ASC
-        LIMIT 500";
+        LIMIT $pageSize
+        OFFSET $pageOffset
+        ";
 
 $sqlselect = $sql;
 $stmt = $conn->prepare($sql);
@@ -191,7 +258,15 @@ $stmt->free_result();
 $stmt->close();
 $conn->close();
 
-echo json_encode($rows, JSON_PRETTY_PRINT);
+$pageCount = ceil($count / $pageSize);
+$nextPage = null;
+if($pageCount > $pageNumber) $nextPage = $pageNumber + 1;
+
+echo json_encode([ 
+    "rows" => $rows,
+    "total" => $count,
+    "nextPage" => $nextPage
+], JSON_PRETTY_PRINT);
 } catch(mysqli_sql_exception $e) {
     error_log($e->getMessage());
     echo json_encode([
