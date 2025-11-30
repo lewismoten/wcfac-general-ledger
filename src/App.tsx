@@ -241,7 +241,6 @@ function App() {
       <Paginator pageNumber={pageNumber} pageSize={pageSize} setPageNumber={setPageNumber} totalCount={totalCount} setPageSize={setPageSize} />
       <MonthlyChart data={monthlyData} series={displayedSeries} />
       <TotalChart data={totalData} series={displayedSeries} />
-      {isFetching ? 'Loading...' : 'Ready'}
       <LedgerTable searchParams={searchParams} />
 
     </>
