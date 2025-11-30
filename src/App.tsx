@@ -9,6 +9,9 @@ import { TotalChart } from './TotalChart';
 import { Paginator } from './Paginator';
 import { LedgerTable } from './LedgerTable';
 import Alert from '@mui/material/Alert';
+import Grid from '@mui/material/Grid';
+import { styled } from '@mui/material/styles';
+import Paper from '@mui/material/Paper';
 
 function App() {
   const [fy, setFy] = useState(["-1"]);
@@ -177,22 +180,60 @@ function App() {
     return seriesNames.filter(name => name !== 'name').slice(0, 10);
   }, [seriesNames]);
 
+  const Item = styled(Paper)(({ theme }) => ({
+    backgroundColor: '#fff',
+    ...theme.typography.body2,
+    padding: theme.spacing(1),
+    textAlign: 'center',
+    color: (theme.vars ?? theme).palette.text.secondary,
+    ...theme.applyStyles('dark', {
+      backgroundColor: '#1A2027',
+    }),
+  }));
+
   return (
     <>
       <h1>General Ledger</h1>
       <Alert severity="warning">Not an official resource. Data has been acquired via FOIA by a private citizen and not under the control of Warren County.</Alert>
-      <FyLookup name='fy' label="Fiscal Year" values={fy} onChange={setFy} />
-      <CoaLookup name='re' label="R/E" values={re} onChange={setRe} searchParams={searchParams} />
-      <CoaLookup name='ol1' label="OL1" visible={showRevenueFields} values={ol1} onChange={setOl1} searchParams={searchParams} />
-      <CoaLookup name='ol1Func' label="Function" visible={showRevenueFields} values={ol1Func} onChange={setOl1Func} searchParams={searchParams} />
-      <CoaLookup name='ol2' label="OL2" visible={showRevenueFields} values={ol2} onChange={setOl2} searchParams={searchParams} />
-      <CoaLookup name='dept' label="Department" visible={showRevenueFields} values={dept} onChange={setDept} searchParams={searchParams} />
-      <CoaLookup name='acct' label="Account" visible values={acct} onChange={setAcct} searchParams={searchParams} />
-      <CoaLookup name='vend' label="Vendor" visible values={vend} onChange={setVend} searchParams={searchParams} />
-      <InvoiceLookup level="1" label="Invoice[1]" visible values={inv1} onChange={setInv1} searchParams={searchParams} />
-      <InvoiceLookup level="2" label="Invoice[2]" visible values={inv2} onChange={setInv2} searchParams={searchParams} />
-      <InvoiceLookup level="3" label="Invoice[3]" visible values={inv3} onChange={setInv3} searchParams={searchParams} />
-      <InvoiceLookup level="-1" label="Invoice" visible values={inv} onChange={setInv} searchParams={searchParams} />
+      <Grid container spacing={2}>
+        <Grid size={6}>
+          <Item><FyLookup name='fy' label="Fiscal Year" values={fy} onChange={setFy} /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><CoaLookup name='re' label="R/E" values={re} onChange={setRe} searchParams={searchParams} /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><CoaLookup name='ol1' label="OL1" visible={showRevenueFields} values={ol1} onChange={setOl1} searchParams={searchParams} /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><CoaLookup name='ol1Func' label="Function" visible={showRevenueFields} values={ol1Func} onChange={setOl1Func} searchParams={searchParams} /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><CoaLookup name='ol2' label="OL2" visible={showRevenueFields} values={ol2} onChange={setOl2} searchParams={searchParams} /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><CoaLookup name='dept' label="Department" visible={showRevenueFields} values={dept} onChange={setDept} searchParams={searchParams} /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><CoaLookup name='acct' label="Account" visible values={acct} onChange={setAcct} searchParams={searchParams} /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><CoaLookup name='vend' label="Vendor" visible values={vend} onChange={setVend} searchParams={searchParams} /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><InvoiceLookup level="1" label="Invoice[1]" visible values={inv1} onChange={setInv1} searchParams={searchParams} /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><InvoiceLookup level="2" label="Invoice[2]" visible values={inv2} onChange={setInv2} searchParams={searchParams} /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><InvoiceLookup level="3" label="Invoice[3]" visible values={inv3} onChange={setInv3} searchParams={searchParams} /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><InvoiceLookup level="-1" label="Invoice" visible values={inv} onChange={setInv} searchParams={searchParams} /></Item>
+        </Grid>
+      </Grid>
+
       <SeriesPicker selected={series} onChange={setSeries} />
       {error ? <b>{error.message}</b> : null}
       {isPaged ? `Paged.` : null}
