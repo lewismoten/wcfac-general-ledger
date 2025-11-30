@@ -48,7 +48,12 @@ export const InvoiceLookup = ({ level, label }: { label: string, level: string }
   ): void => {
     const selectedValues = value.map(v => v.id).sort();
     if (selectedValues.join(',') !== values.join(',')) {
-      searchParams.set(name, selectedValues.join(','));
+      if (selectedValues.length === 0) {
+        if (!searchParams.has(name)) return;
+        searchParams.delete(name);
+      } else {
+        searchParams.set(name, selectedValues.join(','));
+      }
       setSearchParams(searchParams);
     };
   }, [setSearchParams, searchParams, values]);

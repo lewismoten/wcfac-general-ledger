@@ -34,9 +34,16 @@ export const FyLookup = ({ name, label }: { label: string, name: string }): Reac
     if (selectedValues.length > 1 && selectedValues.includes("-1")) {
       selectedValues = selectedValues.filter(value => value !== "-1");
     }
-    if (selectedValues.join(",") !== values.join(","))
-      searchParams.set(name, selectedValues.join(','));
-    setSearchParams(searchParams);
+    if (selectedValues.join(",") !== values.join(",")) {
+      if (selectedValues.length === 0) {
+        if (!searchParams.has(name)) return;
+        searchParams.delete(name);
+      } else {
+        searchParams.set(name, selectedValues.join(','));
+      }
+
+      setSearchParams(searchParams);
+    }
   }, [searchParams, setSearchParams, values]);
 
   return <div>{label}<select multiple onChange={changeSelected}>{options}</select></div>;
