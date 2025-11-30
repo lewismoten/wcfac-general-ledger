@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { CoaLookup } from './CoaLookup';
 import { FyLookup } from './FyLookup';
@@ -13,25 +13,56 @@ import Grid from '@mui/material/Grid';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import { useSearchParams } from 'react-router-dom';
+import type { ApiError } from './ApiError';
+
+interface GraphData {
+  count: number,
+  rows: {
+    series: string,
+    point: string,
+    value: number,
+    pointOrder: number
+  }[]
+}
+
+interface RawGraphData {
+  count: number,
+  rows: {
+    series: string,
+    point: string,
+    value: string,
+    pointOrder: string
+  }[]
+}
 
 function LedgerPage() {
 
   const [searchParams] = useSearchParams();
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const { data, error } = useQuery<{ count: number, rows: { series: string, point: string, value: number, pointOrder: number }[] }>({
+  const { data, error } = useQuery<GraphData>({
     queryKey: ['chartData', searchParams.toString()],
     placeholderData: keepPreviousData,
     queryFn: async () => {
       const res = await fetch(`/api/year-over-year.php?${searchParams.toString()}`);
-      return res.json().then(data => ({
-        count: data.count,
-        rows: data.rows.map(({ series, point, value, pointOrder }: { series: string, point: string, value: string, pointOrder: string }) => ({
-          series,
-          point,
-          value: parseFloat(value),
-          pointOrder: parseFloat(pointOrder)
-        }))
-      })
+      return res.json().then((data: RawGraphData | ApiError) => {
+        if ('error' in data) {
+          console.error(data);
+          setErrorMessage(data.error);
+          throw data.details;
+          // return { count: 0, rows: [] };
+        }
+        setErrorMessage('');
+        return ({
+          count: data.count,
+          rows: data.rows.map(({ series, point, value, pointOrder }: { series: string, point: string, value: string, pointOrder: string }) => ({
+            series,
+            point,
+            value: parseFloat(value),
+            pointOrder: parseFloat(pointOrder)
+          }))
+        })
+      }
       )
     }
 
@@ -120,6 +151,7 @@ function LedgerPage() {
     <>
       <h1>General Ledger</h1>
       <Alert severity="warning">Not an official resource. Data has been acquired via FOIA by a private citizen and not under the control of Warren County.</Alert>
+      {(errorMessage ?? '').trim() === '' ? null : <Alert severity="error">{errorMessage}</Alert>}
       <Grid container spacing={2}>
         <Grid size={6}>
           <Item><FyLookup name='fy' label="Fiscal Year" /></Item>

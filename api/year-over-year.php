@@ -30,16 +30,35 @@ $pageSize = isset($_GET['ps']) ? $_GET['ps'] : '1200';
 
 if(is_filtered($pageNumber)) {
     $pageNumber =intval($pageNumber);
-    if($pageNumber < 1) $pageNumber = 1;
+    if($pageNumber < 1) {
+        echo json_encode([
+            "error" => "Page number invalid",
+            "details" => "Must be 1 or more."
+        ]);
+        exit;
+
+    }
 } else {
     $pageNumber = 1;
 }
 if(is_filtered($pageSize)) {
     $pageSize = intval($pageSize);
-    if($pageSize < 1) $pageSize = 1;
-    if($pageSize > 10000) {
-        $pageSize = 10000;
+    if($pageSize < 1) {
+        echo json_encode([
+            "error" => "Page size too small",
+            "details" => "Must be 1 or more."
+        ]);
+        exit;
     }
+    if($pageSize > 10000) {
+        echo json_encode([
+            "error" => "Page size too large",
+            "details" => "Must be less than or equal to 10,000"
+        ]);
+        exit;
+    }
+} else {
+    $pageAize = 1200;
 }
 
 $config = require "config.php";
@@ -252,10 +271,6 @@ $stmt->fetch();
 $stmt->free_result();
 $stmt->close();
 
-// is count less than page? set to last good page
-if(($pageSize * $pageNumber)-1 > $count) {
-    $pageNumber = ceil($count / $pageSize);
-}
 $offset = (($pageNumber -1) * $pageSize);
 
 $sql = "SELECT 
