@@ -8,9 +8,7 @@ import { MonthlyChart } from './MonthlyChart';
 import { TotalChart } from './TotalChart';
 import { Paginator } from './Paginator';
 import { LedgerTable } from './LedgerTable';
-
-
-
+import Alert from '@mui/material/Alert';
 
 function App() {
   const [fy, setFy] = useState(["-1"]);
@@ -182,6 +180,7 @@ function App() {
   return (
     <>
       <h1>General Ledger</h1>
+      <Alert severity="warning">Not an official resource. Data has been acquired via FOIA by a private citizen and not under the control of Warren County.</Alert>
       <FyLookup name='fy' label="Fiscal Year" values={fy} onChange={setFy} />
       <CoaLookup name='re' label="R/E" values={re} onChange={setRe} searchParams={searchParams} />
       <CoaLookup name='ol1' label="OL1" visible={showRevenueFields} values={ol1} onChange={setOl1} searchParams={searchParams} />
