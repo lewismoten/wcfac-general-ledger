@@ -8,6 +8,8 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { TableVirtuoso, type TableComponents } from 'react-virtuoso';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import type { SxProps } from '@mui/system/styleFunctionSx';
+import { interpolateColor } from './utils';
 
 interface Data {
   id: number,
@@ -40,6 +42,7 @@ interface ColumnData {
   tip: string,
   numeric?: boolean;
   width?: number;
+  colorScale?: boolean;
 }
 
 const columns: ColumnData[] = [
@@ -93,6 +96,7 @@ const columns: ColumnData[] = [
     tip: "Net amount",
     dataKey: 'netAmount',
     numeric: true,
+    colorScale: true
   },
   {
     width: 65,
@@ -156,25 +160,50 @@ function fixedHeaderContent() {
     </TableRow>
   );
 }
-function rowContent(_index: number, row: Data) {
-  return (
-    <>
-      {columns.map((column) => (
+const rowContent = (minNet: number, maxNet: number, medianNet: number) => (_index: number, row: Data) => {
+
+  const colorMin = '#58a858';
+  const colorMedian = '#ffffff';
+  const colorMax = '#be3838';
+
+  return (<>
+    {columns.map((column) => {
+      const sx: SxProps = { fontSize: 'smaller', fontFamily: 'monospace', padding: '2px' };
+      if (column.colorScale) {
+        const value = row[column.dataKey] as number;
+        if (value === minNet) {
+          sx.backgroundColor = colorMin;
+        } else if (value === maxNet) {
+          sx.backgroundColor = colorMax;
+        } else if (value === medianNet) {
+          sx.backgroundColor = colorMedian;
+        } else if (value < medianNet) {
+          let percent = (value - minNet) / (medianNet - minNet);
+          sx.backgroundColor = interpolateColor(colorMin, colorMedian, percent);
+        } else {
+          let percent = (value - medianNet) / (maxNet - medianNet);
+          sx.backgroundColor = interpolateColor(colorMedian, colorMax, percent);
+        }
+      }
+      return (
         <TableCell
-          sx={{ fontSize: 'smaller', fontFamily: 'monospace', padding: '2px' }}
+          sx={sx}
           key={column.dataKey}
           align={column.numeric || false ? 'right' : 'left'}
         >
           {row[column.dataKey]}
         </TableCell>
-      ))}
-    </>
-  );
+      )
+    })}
+  </>)
 }
 type LedgerPage = {
   rows: Data[],
   nextPage: number | null;
-  total?: number
+  total?: number,
+  maxNet: number,
+  minNet: number,
+  medianNet: number
 }
 export const LedgerTable = ({ searchParams = "" }: { searchParams: string }) => {
   const localParams = useMemo(() => {
@@ -184,6 +213,7 @@ export const LedgerTable = ({ searchParams = "" }: { searchParams: string }) => 
     if (params.has('ps')) params.delete('ps');
     return params.toString();
   }, [searchParams]);
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<LedgerPage | ApiError>({
     queryKey: ['legerData', localParams],
     initialPageParam: 1,
@@ -195,16 +225,26 @@ export const LedgerTable = ({ searchParams = "" }: { searchParams: string }) => 
       return res.json();
     }
   });
-  const rows: Data[] = useMemo(() =>
-    data?.pages.flatMap(page => "error" in page ? [] : page.rows) ?? []
+  const [rows, minNet, maxNet, medianNet]: [Data[], number, number, number] = useMemo(() => {
+    const pages = (data?.pages.filter(page => !("error" in page)) || []) as LedgerPage[];
+    const lastPage = pages.at(-1);
+
+    return [
+      pages.flatMap(page => page.rows) ?? [],
+      lastPage?.minNet ?? 0,
+      lastPage?.maxNet ?? 0,
+      lastPage?.medianNet ?? 0
+    ];
+  }
     , [data]
   );
+  const itemContent = useMemo(() => rowContent(minNet, maxNet, medianNet), [minNet, maxNet, medianNet]);
   return <Paper style={{ height: 400, width: '100%' }}>
     <TableVirtuoso
       data={rows ?? []}
       components={VirtuosoTableComponents}
       fixedHeaderContent={fixedHeaderContent}
-      itemContent={rowContent}
+      itemContent={itemContent}
       endReached={() => {
         if (hasNextPage && !isFetchingNextPage) {
           fetchNextPage();
