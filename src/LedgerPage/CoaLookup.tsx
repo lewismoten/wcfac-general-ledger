@@ -1,13 +1,21 @@
 import { useCallback, useMemo, type ReactNode, type SyntheticEvent } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { drillDownLevels } from './utils';
+import { drillDownLevels } from '../utils';
 import TextField from '@mui/material/TextField';
 import Autocomplete, { type AutocompleteChangeDetails, type AutocompleteChangeReason } from '@mui/material/Autocomplete';
+import { useSearchParams } from 'react-router-dom';
 
-export const CoaLookup = ({ name, values = [], onChange, visible = true, label, searchParams = "" }: { label: string, name: string, values: string[], onChange: (id: string[]) => void, visible?: boolean, searchParams: string }): ReactNode => {
+export const CoaLookup = ({ name, label }: { label: string, name: string }): ReactNode => {
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const values = useMemo(() =>
+    (searchParams.has(name) ? searchParams.get(name)?.split(',') ?? [] : [])
+      .filter(v => v.trim() !== ""),
+    [name, searchParams]);
 
   const params = useMemo(() => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
     const idx = drillDownLevels.indexOf(name);
     if (idx !== -1) {
       for (let i = idx; i < drillDownLevels.length; i++) {
@@ -16,16 +24,23 @@ export const CoaLookup = ({ name, values = [], onChange, visible = true, label, 
         }
       }
     }
-    if (params.has('series')) params.delete('series');
+    ['series', 'pg', 'ps'].forEach(key => {
+      if (params.has(key)) params.delete(key);
+    });
     return params.toString();
   }, [searchParams]);
+
   const { data } = useQuery<{ id: string, name: string }[]>({
     queryKey: ['coa', name, params],
     placeholderData: keepPreviousData,
     enabled: true,
     queryFn: async () => {
       const res = await fetch(`/api/lookup-coa.php?type=${name}&${params}`);
-      return res.json();
+      return res.json().then((data: { id: number, name: string }[]) =>
+        data.map(({ id, name }) => ({
+          id: id.toString(),
+          name
+        })))
     }
   });
 
@@ -37,11 +52,10 @@ export const CoaLookup = ({ name, values = [], onChange, visible = true, label, 
   ): void => {
     const selectedValues = value.map(v => v.id).sort();
     if (selectedValues.join(',') !== values.join(',')) {
-      onChange(selectedValues);
+      searchParams.set(name, selectedValues.join(','));
+      setSearchParams(searchParams);
     };
-  }, [onChange, values]);
-
-  if (!visible) return null;
+  }, [setSearchParams, searchParams, values]);
 
   return <Autocomplete
     multiple

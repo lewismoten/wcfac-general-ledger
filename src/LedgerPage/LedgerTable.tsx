@@ -9,122 +9,11 @@ import Paper from '@mui/material/Paper';
 import { TableVirtuoso, type TableComponents } from 'react-virtuoso';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { SxProps } from '@mui/system/styleFunctionSx';
-import { interpolateColor } from './utils';
-
-interface Data {
-  id: number,
-  poNo: string;
-  vendorNo: string;
-  vendorName: string;
-  invoiceNo: string;
-  invoiceDate: string;
-  accountNo: string;
-  accountPaid: string;
-  netAmount: string;
-  checkNo: number,
-  checkDate: string;
-  description: string;
-  batchNo: number
-}
-
-interface ApiError {
-  error: string,
-  details: string,
-  sql?: string,
-  types?: string,
-  params?: any[],
-  state?: string
-}
-
-interface ColumnData {
-  dataKey: keyof Data;
-  label: string;
-  tip: string,
-  numeric?: boolean;
-  width?: number;
-  colorScale?: boolean;
-}
-
-const columns: ColumnData[] = [
-  {
-    width: 70,
-    label: 'P/O NO.',
-    tip: "Purchase Order Number",
-    dataKey: 'poNo',
-    numeric: true,
-  },
-  {
-    width: 70,
-    label: 'VEND. NO.',
-    tip: "Vendor Number",
-    dataKey: 'vendorNo',
-    numeric: true,
-  },
-  {
-    width: 200,
-    label: 'VENDOR NAME',
-    tip: "Vendor Name",
-    dataKey: 'vendorName',
-  },
-  {
-    width: 100,
-    label: 'INVOICE NO.',
-    tip: "Invoice Number",
-    dataKey: 'invoiceNo',
-  },
-  {
-    width: 75,
-    label: 'INVOICE DATE',
-    tip: "Invoice Date",
-    dataKey: 'invoiceDate',
-  },
-  {
-    width: 200,
-    label: 'ACCOUNT NO.',
-    tip: "Account Number",
-    dataKey: 'accountNo',
-  },
-  {
-    width: 75,
-    label: 'ACCOUNT PD',
-    tip: "Account Paid",
-    dataKey: 'accountPaid',
-  },
-  {
-    width: 75,
-    label: 'NET AMOUNT',
-    tip: "Net amount",
-    dataKey: 'netAmount',
-    numeric: true,
-    colorScale: true
-  },
-  {
-    width: 65,
-    label: 'CHECK NO.',
-    tip: "Check Number",
-    dataKey: 'checkNo',
-    numeric: true,
-  },
-  {
-    width: 75,
-    label: 'CHECK DATE',
-    tip: "Check Date",
-    dataKey: 'checkDate',
-  },
-  {
-    width: 200,
-    label: 'DESCRIPTION',
-    tip: "Description",
-    dataKey: 'description',
-  },
-  {
-    width: 65,
-    label: 'BATCH',
-    tip: "Batch Number",
-    dataKey: 'batchNo',
-    numeric: true,
-  },
-];
+import { interpolateColor } from '../utils';
+import type { Data } from './Data';
+import { columns } from './columns';
+import type { ApiError } from './ApiError';
+import { useSearchParams } from 'react-router-dom';
 
 const VirtuosoTableComponents: TableComponents<Data> = {
   Scroller: forwardRef<HTMLDivElement>((props, ref) => (
@@ -205,12 +94,14 @@ type LedgerPage = {
   minNet: number,
   medianNet: number
 }
-export const LedgerTable = ({ searchParams = "" }: { searchParams: string }) => {
+export const LedgerTable = () => {
+  const [searchParams] = useSearchParams();
+
   const localParams = useMemo(() => {
     const params = new URLSearchParams(searchParams);
-    if (params.has('series')) params.delete('series');
-    if (params.has('pg')) params.delete('pg');
-    if (params.has('ps')) params.delete('ps');
+    ['series', 'pg', 'ps'].forEach(key => {
+      if (params.has(key)) params.delete(key);
+    });
     return params.toString();
   }, [searchParams]);
 

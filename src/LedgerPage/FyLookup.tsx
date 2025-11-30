@@ -1,10 +1,16 @@
 import { useCallback, useMemo, type ChangeEvent, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 
-export const FyLookup = ({ name, values = ["-1"], onChange, visible = true, label }: { label: string, name: string, values: string[], onChange: (id: string[]) => void, visible?: boolean }): ReactNode => {
+export const FyLookup = ({ name, label }: { label: string, name: string }): ReactNode => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const values = useMemo(() =>
+    (searchParams.has(name) ? searchParams.get(name)?.split(',') ?? [] : [])
+      .filter(v => v.trim() !== '')
+    , [name, searchParams]);
 
   const { isFetching, error, data } = useQuery({
-    queryKey: [`coa_${name}`],
+    queryKey: ['coa', name],
     enabled: true,
     queryFn: async () => {
       const res = await fetch(`/api/lookup-fy.php?type=${name}`);
@@ -29,9 +35,10 @@ export const FyLookup = ({ name, values = ["-1"], onChange, visible = true, labe
       selectedValues = selectedValues.filter(value => value !== "-1");
     }
     if (selectedValues.join(",") !== values.join(","))
-      onChange(selectedValues);
-  }, [onChange, values]);
+      searchParams.set(name, selectedValues.join(','));
+    setSearchParams(searchParams);
+  }, [searchParams, setSearchParams, values]);
 
-  return visible ? <div>{label}<select multiple onChange={changeSelected}>{options}</select></div> : null;
+  return <div>{label}<select multiple onChange={changeSelected}>{options}</select></div>;
 
 }

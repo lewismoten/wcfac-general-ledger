@@ -1,23 +1,35 @@
 import type { ChangeEventHandler } from "react"
 import { useCallback, useMemo } from "react"
+import { useSearchParams } from "react-router-dom";
 
 const PAGE_SIZES = [10, 25, 50, 100, 250, 500, 1000, 1200, 1500, 2000];
 
 export const Paginator = ({
-  pageNumber,
-  pageSize,
-  totalCount,
-  setPageNumber,
-  setPageSize
+  totalCount
 }: {
-  pageNumber: number,
-  pageSize: number,
-  totalCount: number,
-  setPageNumber: (page: number) => void,
-  setPageSize: (size: number) => void
+  totalCount: number
 }
 ) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [pageNumber, pageSize] = useMemo(() => {
+    const page = parseInt(searchParams.has('pg') ? searchParams.get('pg') ?? '1' : '1');
+    const size = parseInt(searchParams.has('ps') ? searchParams.get('ps') ?? '1200' : '1200');
+    return [page, size];
+  },
+    [searchParams]);
   const pageCount = useMemo(() => Math.ceil(totalCount / pageSize), [totalCount, pageSize]);
+
+  const [setPageNumber, setPageSize] = useMemo(() => {
+    const setPageNumber = (number: number) => {
+      searchParams.set('pg', number.toString());
+      setSearchParams(searchParams);
+    }
+    const setPageSize = (size: number) => {
+      searchParams.set('ps', size.toString());
+      setSearchParams(searchParams);
+    }
+    return [setPageNumber, setPageSize];
+  }, [searchParams, setSearchParams])
 
   return <div>
     <JumpFirst pageNumber={pageNumber} setPageNumber={setPageNumber} />

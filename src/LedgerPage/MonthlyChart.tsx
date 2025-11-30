@@ -1,5 +1,5 @@
 import { CartesianGrid, Legend, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts"
-import { colors, formatCurrency, formatCurrencyAsUnit } from "./utils"
+import { colors, formatCurrency, formatCurrencyAsUnit } from "../utils"
 
 export const MonthlyChart = ({ data, series }: { data: any[], series: string[] }) => {
 

@@ -1,14 +1,23 @@
 import { useCallback, useMemo, type ReactNode, type SyntheticEvent } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { drillDownLevels } from './utils';
+import { drillDownLevels } from '../utils';
 import TextField from '@mui/material/TextField';
 import Autocomplete, { type AutocompleteChangeDetails, type AutocompleteChangeReason } from '@mui/material/Autocomplete';
+import { useSearchParams } from 'react-router-dom';
 
-export const InvoiceLookup = ({ level, values = [], onChange, visible = true, label, searchParams }: { label: string, level: string, values: string[], onChange: (ids: string[]) => void, visible?: boolean, searchParams: string }): ReactNode => {
+export const InvoiceLookup = ({ level, label }: { label: string, level: string }): ReactNode => {
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const name = useMemo(() => level === '-1' ? 'inv' : `inv${level}`, [level]);
+  const values = useMemo(() =>
+    (searchParams.has(name) ? searchParams.get(name)?.split(',') ?? [] : [])
+      .filter(v => v.trim() !== "")
+    , [name, searchParams]);
 
   const params = useMemo(() => {
     const params = new URLSearchParams(searchParams);
-    const idx = drillDownLevels.indexOf(`inv${level === "-1" ? "" : level}`);
+    const idx = drillDownLevels.indexOf(name);
     if (idx !== -1) {
       for (let i = idx; i < drillDownLevels.length; i++) {
         if (params.has(drillDownLevels[i])) {
@@ -16,7 +25,9 @@ export const InvoiceLookup = ({ level, values = [], onChange, visible = true, la
         }
       }
     }
-    if (params.has('series')) params.delete('series');
+    ['series', 'pg', 'ps'].forEach(key => {
+      if (params.has(key)) params.delete(key);
+    });
     return params.toString();
   }, [searchParams]);
 
@@ -37,11 +48,10 @@ export const InvoiceLookup = ({ level, values = [], onChange, visible = true, la
   ): void => {
     const selectedValues = value.map(v => v.id).sort();
     if (selectedValues.join(',') !== values.join(',')) {
-      onChange(selectedValues);
+      searchParams.set(name, selectedValues.join(','));
+      setSearchParams(searchParams);
     };
-  }, [onChange, values]);
-
-  if (!visible) return null;
+  }, [setSearchParams, searchParams, values]);
 
   return <Autocomplete
     multiple

@@ -1,5 +1,5 @@
 import { CartesianGrid, Legend, Bar, BarChart, Tooltip, XAxis, YAxis } from "recharts"
-import { colors, formatCurrencyAsUnit, formatCurrency } from "./utils"
+import { colors, formatCurrencyAsUnit, formatCurrency } from "../utils"
 import { useMemo } from "react";
 
 export const TotalChart = ({ data, series }: { data: any[], series: string[] }) => {
