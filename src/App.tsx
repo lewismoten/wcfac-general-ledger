@@ -7,6 +7,7 @@ import { SeriesPicker } from './SeriesPicker';
 import { MonthlyChart } from './MonthlyChart';
 import { TotalChart } from './TotalChart';
 import { Paginator } from './Paginator';
+import { LedgerTable } from './LedgerTable';
 
 
 
@@ -201,6 +202,7 @@ function App() {
       <MonthlyChart data={monthlyData} series={displayedSeries} />
       <TotalChart data={totalData} series={displayedSeries} />
       {isFetching ? 'Loading...' : 'Ready'}
+      <LedgerTable searchParams={searchParams} />
 
     </>
   )
