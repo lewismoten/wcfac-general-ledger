@@ -10,8 +10,6 @@ import { Paginator } from './Paginator';
 import { LedgerTable } from './LedgerTable';
 import Alert from '@mui/material/Alert';
 import Grid from '@mui/material/Grid';
-// import { styled } from '@mui/material/styles';
-// import Paper from '@mui/material/Paper';
 import { useSearchParams } from 'react-router-dom';
 import type { ApiError } from './ApiError';
 import { LedgerLookup } from './LedgerLookup';
@@ -136,17 +134,6 @@ function LedgerPage() {
     if (seriesNames.length === 0) return [];
     return seriesNames.filter(name => name !== 'name').slice(0, 10);
   }, [seriesNames]);
-
-  // const Item = styled(Paper)(({ theme }) => ({
-  //   backgroundColor: '#fff',
-  //   ...theme.typography.body2,
-  //   padding: theme.spacing(1),
-  //   textAlign: 'center',
-  //   color: (theme.vars ?? theme).palette.text.secondary,
-  //   ...theme.applyStyles('dark', {
-  //     backgroundColor: '#1A2027',
-  //   }),
-  // }));
 
   const SIZE = { xs: 12, sm:6, md: 3 };
 
