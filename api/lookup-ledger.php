@@ -1,5 +1,6 @@
 <?php
 require_once './helpers.php';
+require_once './build_ledger_filter_clause.php';
 
 $type = $_GET['type'];
 $table = '';
@@ -65,71 +66,10 @@ $where = "WHERE $idColumn IS NOT NULL";
 $types = '';
 $params = [];
 
-if(is_filtered_multi($fy)) {
-    $where .= " AND CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%Y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%Y') END IN($fy)";
-}
+$filter = build_ledger_filter_clause($types, $params);
 
-if(is_filtered($re)) {
-    $where .= " AND LEDGER.ACCOUNT_RE = ?";
-    $types .= "i";
-    $params[] = intval($re);
-}
-if((is_filtered($re) && $re === '4') || !is_filtered($re)) {
-    if(is_filtered($ol1)) {
-        $where .= " AND LEDGER.ACCOUNT_OL1 = ?";
-        $types .= "i";
-        $params[] = intval($ol1);
-    }
-    if(is_filtered($ol1Func)) {
-        $where .= " AND LEDGER.ACCOUNT_OL1_FUNC = ?";
-        $types .= "i";
-        $params[] = intval($ol1Func);
-    }
-    if(is_filtered($ol2)) {
-        $where .= " AND LEDGER.ACCOUNT_OL2 = ?";
-        $types .= "i";
-        $params[] = intval($ol2);
-    }
-    if(is_filtered($dept)) {
-        $where .= " AND LEDGER.ACCOUNT_DEPT = ?";
-        $types .= "i";
-        $params[] = intval($dept);
-    }
-}
-if(is_filtered($acct)) {
-    $where .= " AND LEDGER.ACCOUNT_NO = ?";
-    $types .= "i";
-    $params[] = intval($acct);
-}
-if(is_filtered($vend)) {
-    $where .= " AND LEDGER.VENDOR_ID = ?";
-    $types .= "i";
-    $params[] = intval($vend);
-}
-if(is_filtered($po)) {
-    $where .= " AND LEDGER.PURCHASE_ORDER = ?";
-    $types .= "i";
-    $params[] = intval($po);
-}
-if(is_filtered_s($inv1)) {
-    $where .= " AND INVOICE_NO_1 = ?";
-    $types .= "s";
-    $params[] = $inv1;
-}
-if(is_filtered_s($inv2)) {
-    $where .= " AND INVOICE_NO_2 = ?";
-    $types .= "s";
-    $params[] = $inv2;
-}
-if(is_filtered_s($inv3)) {
-    $where .= " AND INVOICE_NO_3 = ?";
-    $types .= "s";
-    $params[] = $inv3;
-}
-if(is_filtered_s($inv)) {
-    $where .= " AND INVOICE_NO = ?";
-    $types .= "s";
-    $params[] = $inv;
+if($filter != '') {
+    $where .= " AND $filter";
 }
 
 $sql = "SELECT DISTINCT
