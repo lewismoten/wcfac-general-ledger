@@ -33,6 +33,7 @@ function build_ledger_filter_clause(&$types, &$params) {
   "DATE_FORMAT(CHECK_DATE, '%Y') + 
     CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN 1 ELSE 0 END", 
     $types, $params);
+  $filters[] = filter_num('bat', 'LEDGER.BATCH', $types, $params);
   $filters[] = filter_num('re', 'LEDGER.ACCOUNT_RE', $types, $params);
   $filters[] = filter_num('ol1', 'LEDGER.ACCOUNT_OL1', $types, $params);
   $filters[] = filter_num('ol1Func', 'LEDGER.ACCOUNT_OL1_FUNC', $types, $params);
@@ -41,6 +42,7 @@ function build_ledger_filter_clause(&$types, &$params) {
   $filters[] = filter_num('acct', 'LEDGER.ACCOUNT_NO', $types, $params);
   $filters[] = filter_num('vend', 'LEDGER.VENDOR_ID', $types, $params);
   $filters[] = filter_num('po', 'LEDGER.PURCHASE_ORDER', $types, $params);
+  $filters[] = filter_num('chk', 'LEDGER.CHECK_NO', $types, $params);
   $filters[] = filter_str('inv', 'LEDGER.INVOICE_NO', $types, $params);
   $filters[] = filter_str('inv1', 'LEDGER.INVOICE_NO_1', $types, $params);
   $filters[] = filter_str('inv2', 'LEDGER.INVOICE_NO_2', $types, $params);

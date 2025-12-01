@@ -97,6 +97,9 @@ foreach($series as $name) {
         case 'fy':
             $seriesColumnPieces[] = $fiscalYearLabel;
             break;
+        case 'bat':
+            $seriesColumnPieces[] = "IFNULL(LEDGER.BATCH, '[No Batch]')";
+            break;
         case 're':
             $seriesColumnPieces[] = "IFNULL(COA_RE.Name, '[No RE]')";
             $seriesJoinPieces[] = "LEFT OUTER JOIN COA_RE ON LEDGER.ACCOUNT_RE = COA_RE.ID";
@@ -111,6 +114,9 @@ foreach($series as $name) {
             break;
         case 'po':
             $seriesColumnPieces[] = "IFNULL(LPAD(LEDGER.PURCHASE_ORDER, 6, '0'), '[No PO]')";
+            break;
+        case 'chk':
+            $seriesColumnPieces[] = "IFNULL(LEDGER.CHECK_NO, '[No Check No]')";
             break;
         case 'ol1':
             $seriesColumnPieces[] = "IFNULL(CONCAT(LPAD(COA_OL1.ID, 1, '0'), ': ', COA_OL1.Name), '[No OL1]')";

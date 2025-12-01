@@ -1,5 +1,6 @@
 export const drillDownLevels = [
   'fy',
+  'bat',
   're',
   'ol1',
   'ol1Func',
@@ -8,6 +9,7 @@ export const drillDownLevels = [
   'acct',
   'vend',
   'po',
+  'chk',
   'inv1',
   'inv2',
   'inv3',

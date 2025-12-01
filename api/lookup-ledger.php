@@ -27,7 +27,14 @@ switch($type) {
     case 'po': 
         $idColumn = "`PURCHASE_ORDER`";
         $nameColumn = "LPAD(`PURCHASE_ORDER`, 6, '0')";
-
+        break;
+    case 'bat':
+        $idColumn = "`BATCH`";
+        $nameColumn = $idColumn;
+        break;
+    case 'chk':
+        $idColumn = "`CHECK_NO`";
+        $nameColumn = $idColumn;
         break;
 
     default: 

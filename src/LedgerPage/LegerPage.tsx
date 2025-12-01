@@ -158,6 +158,9 @@ function LedgerPage() {
           <Item><FyLookup name='fy' label="Fiscal Year" /></Item>
         </Grid>
         <Grid size={6}>
+          <Item><LedgerLookup name='bat' label="Batch" /></Item>
+        </Grid>
+        <Grid size={6}>
           <Item><CoaLookup name='re' label="R/E" /></Item>
         </Grid>
         <Grid size={6}>
@@ -180,6 +183,9 @@ function LedgerPage() {
         </Grid>
         <Grid size={6}>
           <Item><LedgerLookup name='po' label="P/O" /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><LedgerLookup name='chk' label="Check" /></Item>
         </Grid>
         <Grid size={6}>
           <Item><InvoiceLookup level="1" label="Invoice[1]" /></Item>
