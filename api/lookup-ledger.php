@@ -87,7 +87,7 @@ $sql = "SELECT DISTINCT
         $where     
         ORDER BY
             $nameColumn ASC
-        LIMIT 500";
+        LIMIT 10000";
 $stmt = $conn->prepare($sql);
 if(!$stmt) {
   echo json_encode([
