@@ -1,0 +1,29 @@
+# Under consideration
+
+- [ ] Filter Range for Check Date
+- [ ] Filter Range for Invoice Date
+- [ ] Filter Range for Account Paid
+- [ ] Filter Description
+- [ ] Filter for days between Invoice/Check Date
+- [ ] Determine if all check dates in a batch always match and update lookup accordingly
+- [ ] Change Grid to display Year, Week, Day, All-Time
+- [ ] Pie Chart for category / sub-category ?
+- [ ] Save filter parameters as a named query
+- [ ] Ability to add notes to named query
+- [ ] Ability to add notes to individual entries
+- [ ] Ability to import additional csv data
+- [ ] Ability to create reports
+- [ ] Ability to download reports as PDF
+- [ ] Provide simple/advanced filter interface
+  - [ ] Display "chips" in simple interface
+- [ ] Ability to download matches as CSV / Excel Spreadsheet
+- [ ] Display QR Code that can be downloaded
+- [ ] Convert pagination for chart to MUI control
+- [ ] Set Lookups to query API based on what is searched to bypass limit
+- [ ] Use/display account description overrides from COA
+- [ ] Display statistics (total records, earliest check date, latest check date, etc.)
+- [ ] Categorize vendors in categories (Water & Sewage, Electric, Office Supplies, etc.)
+- [ ] Create queries to detect discrepencies
+- [ ] Handle invoice numbers beginning with months "SEPT003655 3422" to remove or swap month in INVOICE_NO_1
+- [ ] Make ledger data columns sortabl in table
+- [ ] Mobile Friendly / Responsive
