@@ -15,6 +15,7 @@
 - [ ] Ability to create reports
 - [ ] Ability to download reports as PDF
 - [ ] Provide simple/advanced filter interface
+  - [ ] Search [ string ] Range [start] and [end]
   - [ ] Display "chips" in simple interface
 - [ ] Ability to download matches as CSV / Excel Spreadsheet
 - [ ] Display QR Code that can be downloaded
