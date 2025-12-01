@@ -72,6 +72,6 @@ export const FyLookup = ({ name, label }: { label: string, name: string }): Reac
     renderInput={(params) => (
       <TextField {...params} label={label} />
     )}
-    sx={{ width: '500px' }}
+    sx={{ width: '100%' }}
   />
 }

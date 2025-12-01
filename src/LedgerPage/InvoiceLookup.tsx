@@ -68,7 +68,7 @@ export const InvoiceLookup = ({ level, label }: { label: string, level: string }
     renderInput={(params) => (
       <TextField {...params} label={label} />
     )}
-    sx={{ width: '500px' }}
+    sx={{ width: '100%' }}
   />
 
 }

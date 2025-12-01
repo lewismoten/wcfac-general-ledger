@@ -10,8 +10,8 @@ import { Paginator } from './Paginator';
 import { LedgerTable } from './LedgerTable';
 import Alert from '@mui/material/Alert';
 import Grid from '@mui/material/Grid';
-import { styled } from '@mui/material/styles';
-import Paper from '@mui/material/Paper';
+// import { styled } from '@mui/material/styles';
+// import Paper from '@mui/material/Paper';
 import { useSearchParams } from 'react-router-dom';
 import type { ApiError } from './ApiError';
 import { LedgerLookup } from './LedgerLookup';
@@ -137,67 +137,69 @@ function LedgerPage() {
     return seriesNames.filter(name => name !== 'name').slice(0, 10);
   }, [seriesNames]);
 
-  const Item = styled(Paper)(({ theme }) => ({
-    backgroundColor: '#fff',
-    ...theme.typography.body2,
-    padding: theme.spacing(1),
-    textAlign: 'center',
-    color: (theme.vars ?? theme).palette.text.secondary,
-    ...theme.applyStyles('dark', {
-      backgroundColor: '#1A2027',
-    }),
-  }));
+  // const Item = styled(Paper)(({ theme }) => ({
+  //   backgroundColor: '#fff',
+  //   ...theme.typography.body2,
+  //   padding: theme.spacing(1),
+  //   textAlign: 'center',
+  //   color: (theme.vars ?? theme).palette.text.secondary,
+  //   ...theme.applyStyles('dark', {
+  //     backgroundColor: '#1A2027',
+  //   }),
+  // }));
+
+  const SIZE = { xs: 12, sm:6, md: 3 };
 
   return (
     <>
       <h1>General Ledger</h1>
       <Alert severity="warning">Not an official resource. Data has been acquired via FOIA by a private citizen and not under the control of Warren County.</Alert>
       {(errorMessage ?? '').trim() === '' ? null : <Alert severity="error">{errorMessage}</Alert>}
-      <Grid container spacing={2}>
-        <Grid size={6}>
-          <Item><FyLookup name='fy' label="Fiscal Year" /></Item>
+      <Grid container spacing={1}>
+        <Grid  size={SIZE}>
+          <FyLookup name='fy' label="Fiscal Year" />
         </Grid>
-        <Grid size={6}>
-          <Item><LedgerLookup name='bat' label="Batch" /></Item>
+        <Grid size={SIZE}>
+          <LedgerLookup name='bat' label="Batch" />
         </Grid>
-        <Grid size={6}>
-          <Item><CoaLookup name='re' label="R/E" /></Item>
+        <Grid size={SIZE}>
+          <CoaLookup name='re' label="R/E" />
         </Grid>
-        <Grid size={6}>
-          <Item><CoaLookup name='ol1' label="OL1" /></Item>
+        <Grid size={SIZE}>
+          <CoaLookup name='ol1' label="OL1" />
         </Grid>
-        <Grid size={6}>
-          <Item><CoaLookup name='ol1Func' label="Function" /></Item>
+        <Grid size={SIZE}>
+          <CoaLookup name='ol1Func' label="Function" />
         </Grid>
-        <Grid size={6}>
-          <Item><CoaLookup name='ol2' label="OL2" /></Item>
+        <Grid size={SIZE}>
+          <CoaLookup name='ol2' label="OL2" />
         </Grid>
-        <Grid size={6}>
-          <Item><CoaLookup name='dept' label="Department" /></Item>
+        <Grid size={SIZE}>
+          <CoaLookup name='dept' label="Department" />
         </Grid>
-        <Grid size={6}>
-          <Item><CoaLookup name='acct' label="Account" /></Item>
+        <Grid size={SIZE}>
+          <CoaLookup name='acct' label="Account" />
         </Grid>
-        <Grid size={6}>
-          <Item><CoaLookup name='vend' label="Vendor" /></Item>
+        <Grid size={SIZE}>
+          <CoaLookup name='vend' label="Vendor" />
         </Grid>
-        <Grid size={6}>
-          <Item><LedgerLookup name='po' label="P/O" /></Item>
+        <Grid size={SIZE}>
+          <LedgerLookup name='po' label="P/O" />
         </Grid>
-        <Grid size={6}>
-          <Item><LedgerLookup name='chk' label="Check" /></Item>
+        <Grid size={SIZE}>
+          <LedgerLookup name='chk' label="Check" />
         </Grid>
-        <Grid size={6}>
-          <Item><InvoiceLookup level="1" label="Invoice[1]" /></Item>
+        <Grid size={SIZE}>
+          <InvoiceLookup level="1" label="Invoice[1]" />
         </Grid>
-        <Grid size={6}>
-          <Item><InvoiceLookup level="2" label="Invoice[2]" /></Item>
+        <Grid size={SIZE}>
+          <InvoiceLookup level="2" label="Invoice[2]" />
         </Grid>
-        <Grid size={6}>
-          <Item><InvoiceLookup level="3" label="Invoice[3]" /></Item>
+        <Grid size={SIZE}>
+          <InvoiceLookup level="3" label="Invoice[3]" />
         </Grid>
-        <Grid size={6}>
-          <Item><InvoiceLookup level="-1" label="Invoice" /></Item>
+        <Grid size={SIZE}>
+          <InvoiceLookup level="-1" label="Invoice" />
         </Grid>
       </Grid>
 

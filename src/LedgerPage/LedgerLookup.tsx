@@ -72,6 +72,6 @@ export const LedgerLookup = ({ name, label }: { label: string, name: string }): 
     renderInput={(params) => (
       <TextField {...params} label={label} />
     )}
-    sx={{ width: '500px' }}
+    sx={{ width: '100%' }}
   />
 }

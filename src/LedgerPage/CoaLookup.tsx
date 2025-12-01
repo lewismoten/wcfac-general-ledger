@@ -72,6 +72,6 @@ export const CoaLookup = ({ name, label }: { label: string, name: string }): Rea
     renderInput={(params) => (
       <TextField {...params} label={label} />
     )}
-    sx={{ width: '500px' }}
+    sx={{ width: '100%' }}
   />
 }
