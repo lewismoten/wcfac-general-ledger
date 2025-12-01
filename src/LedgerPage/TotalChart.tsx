@@ -14,7 +14,7 @@ export const TotalChart = ({ data, series }: { data: any[], series: string[] }) 
     <CartesianGrid strokeDasharray="3 3" />
     <Tooltip formatter={formatCurrency} />
     <XAxis stroke="#333" dataKey="name" fontSize={10} tickLine={true} />
-    <YAxis width="auto" tickFormatter={formatCurrencyAsUnit} />
+    <YAxis tickFormatter={formatCurrencyAsUnit} />
     <Legend />
     {
       series.map((series, idx) =>
