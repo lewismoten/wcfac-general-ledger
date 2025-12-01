@@ -1,6 +1,6 @@
 <?php
-include './helpers.php';
-
+require_once './helpers.php';
+require_once './build_ledger_filter_clause.php';
 $sql = "";
 $types = '';
 $params = [];
@@ -86,7 +86,6 @@ if ($conn->connect_error) {
 }
 $conn->set_charset($db["charset"] ?? "utf8");
 
-$filter = '';
 
 $fiscalYearLabel = "'FY', CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN YEAR(CHECK_DATE)+1 ELSE YEAR(CHECK_DATE) END";
 $seriesJoin = '';
@@ -153,94 +152,11 @@ if(sizeof($seriesJoinPieces) > 0) {
 } else {
     $seriesJoin = '';
 }
-if(is_filtered_multi($fy)) {
-    $filter .= " AND CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%Y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%Y') END IN($fy)";
-}
-if(is_filtered_multi($re)) {
-    $filter .= " AND LEDGER.ACCOUNT_RE IN($re)";
-}
-if((is_filtered($re) && $re === '4') || !is_filtered($re)) {
-    if(is_filtered_multi($ol1)) {
-        $values = array_map('trim', explode(',', $ol1));
-        $placeholders = implode(',', array_fill(0, count($values), '?'));
-        $filter .= " AND LEDGER.ACCOUNT_OL1 IN($placeholders)";
-        $types .= str_repeat('i', count($values));
-        $params = array_merge($params, $values);
-    }
-    if(is_filtered_multi($ol1Func)) {
-        $values = array_map('trim', explode(',', $ol1Func));
-        $placeholders = implode(',', array_fill(0, count($values), '?'));
-        $filter .= " AND LEDGER.ACCOUNT_OL1_FUNC IN($placeholders)";
-        $types .= str_repeat('i', count($values));
-        $params = array_merge($params, $values);
-    }
-    if(is_filtered_multi($ol2)) {
-        $values = array_map('trim', explode(',', $ol2));
-        $placeholders = implode(',', array_fill(0, count($values), '?'));
-        $filter .= " AND LEDGER.ACCOUNT_OL2 IN($placeholders)";
-        $types .= str_repeat('i', count($values));
-        $params = array_merge($params, $values);
-    }
-    if(is_filtered_multi($dept)) {
-        $values = array_map('trim', explode(',', $dept));
-        $placeholders = implode(',', array_fill(0, count($values), '?'));
-        $filter .= " AND LEDGER.ACCOUNT_DEPT IN($placeholders)";
-        $types .= str_repeat('i', count($values));
-        $params = array_merge($params, $values);
-    }
-}
-if(is_filtered_multi($acct)) {
-    $values = array_map('trim', explode(',', $acct));
-    $placeholders = implode(',', array_fill(0, count($values), '?'));
-    $filter .= " AND LEDGER.ACCOUNT_NO IN($placeholders)";
-    $types .= str_repeat('i', count($values));
-    $params = array_merge($params, $values);
-}
-if(is_filtered_multi($vend)) {
-    $values = array_map('trim', explode(',', $vend));
-    $placeholders = implode(',', array_fill(0, count($values), '?'));
-    $filter .= " AND LEDGER.VENDOR_ID IN($placeholders)";
-    $types .= str_repeat('i', count($values));
-    $params = array_merge($params, $values);
-}
-if(is_filtered_multi($po)) {
-    $values = array_map('trim', explode(',', $po));
-    $placeholders = implode(',', array_fill(0, count($values), '?'));
-    $filter .= " AND LEDGER.PURCHASE_ORDER IN($placeholders)";
-    $types .= str_repeat('i', count($values));
-    $params = array_merge($params, $values);
-}
-if(is_filtered_multi_s($inv)) {
-    $values = array_map('trim', explode(',', $inv));
-    $placeholders = implode(',', array_fill(0, count($values), '?'));
-    $filter .= " AND LEDGER.INVOICE_NO IN($placeholders)";
-    $types .= str_repeat('s', count($values));
-    $params = array_merge($params, $values);
-}
-if(is_filtered_multi_s($inv1)) {
-    $values = array_map('trim', explode(',', $inv1));
-    $placeholders = implode(',', array_fill(0, count($values), '?'));
-    $filter .= " AND LEDGER.INVOICE_NO_1 IN($placeholders)";
-    $types .= str_repeat('s', count($values));
-    $params = array_merge($params, $values);
-}
-if(is_filtered_multi_s($inv2)) {
-    $values = array_map('trim', explode(',', $inv2));
-    $placeholders = implode(',', array_fill(0, count($values), '?'));
-    $filter .= " AND LEDGER.INVOICE_NO_2 IN($placeholders)";
-    $types .= str_repeat('s', count($values));
-    $params = array_merge($params, $values);
-}
-if(is_filtered_multi_s($inv3)) {
-    $values = array_map('trim', explode(',', $inv3));
-    $placeholders = implode(',', array_fill(0, count($values), '?'));
-    $filter .= " AND LEDGER.INVOICE_NO_3 IN($placeholders)";
-    $types .= str_repeat('s', count($values));
-    $params = array_merge($params, $values);
-}
+
+$filter = build_ledger_filter_clause($types, $params);
 
 if($filter != '') {
-    $filter = "WHERE 1=1 $filter";
+    $filter = "WHERE $filter";
 }
 
 $fromWhere = "FROM LEDGER 

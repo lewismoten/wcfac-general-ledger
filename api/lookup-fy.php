@@ -1,5 +1,5 @@
 <?php
-include './helpers.php';
+require_once './helpers.php';
 
 $config = require "config.php";
 $db = $config["db"];

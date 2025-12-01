@@ -1,5 +1,5 @@
 <?php
-include './helpers.php';
+require_once './helpers.php';
 
 $id = $_GET['type'];
 $table = '';
