@@ -5,18 +5,17 @@ import TextField from '@mui/material/TextField';
 import Autocomplete, { type AutocompleteChangeDetails, type AutocompleteChangeReason } from '@mui/material/Autocomplete';
 import { useSearchParams } from 'react-router-dom';
 
-export const InvoiceLookup = ({ level, label }: { label: string, level: string }): ReactNode => {
+export const LedgerLookup = ({ name, label }: { label: string, name: string }): ReactNode => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const name = useMemo(() => level === '-1' ? 'inv' : `inv${level}`, [level]);
   const values = useMemo(() =>
     (searchParams.has(name) ? searchParams.get(name)?.split(',') ?? [] : [])
-      .filter(v => v.trim() !== "")
-    , [name, searchParams]);
+      .filter(v => v.trim() !== ""),
+    [name, searchParams]);
 
   const params = useMemo(() => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
     const idx = drillDownLevels.indexOf(name);
     if (idx !== -1) {
       for (let i = idx; i < drillDownLevels.length; i++) {
@@ -32,14 +31,19 @@ export const InvoiceLookup = ({ level, label }: { label: string, level: string }
   }, [searchParams]);
 
   const { data } = useQuery<{ id: string, name: string }[]>({
-    queryKey: [`invoice`, level, params],
-    enabled: true,
+    queryKey: ['ledger', name, params],
     placeholderData: keepPreviousData,
+    enabled: true,
     queryFn: async () => {
-      const res = await fetch(`/api/lookup-invoice.php?level=${level}&${params}`);
-      return res.json();
+      const res = await fetch(`/api/lookup-ledger.php?type=${name}&${params}`);
+      return res.json().then((data: { id: number, name: string }[]) =>
+        data.map(({ id, name }) => ({
+          id: id.toString(),
+          name
+        })))
     }
   });
+
   const changeSelected = useCallback((
     _event: SyntheticEvent<Element, Event>,
     value: { id: string; name: string; }[],
@@ -70,5 +74,4 @@ export const InvoiceLookup = ({ level, label }: { label: string, level: string }
     )}
     sx={{ width: '500px' }}
   />
-
 }

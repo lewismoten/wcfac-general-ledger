@@ -1,5 +1,5 @@
 import { useMemo, type ChangeEvent, type ReactNode } from 'react'
-import { drillDownLevels } from '../utils';
+import { drillDownLevels } from './utils';
 import { useSearchParams } from 'react-router-dom';
 
 export const SeriesPicker = (): ReactNode => {

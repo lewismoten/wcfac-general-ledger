@@ -7,6 +7,7 @@ export const drillDownLevels = [
   'dept',
   'acct',
   'vend',
+  'po',
   'inv1',
   'inv2',
   'inv3',

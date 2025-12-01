@@ -14,6 +14,7 @@ import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import { useSearchParams } from 'react-router-dom';
 import type { ApiError } from './ApiError';
+import { LedgerLookup } from './LedgerLookup';
 
 interface GraphData {
   count: number,
@@ -176,6 +177,9 @@ function LedgerPage() {
         </Grid>
         <Grid size={6}>
           <Item><CoaLookup name='vend' label="Vendor" /></Item>
+        </Grid>
+        <Grid size={6}>
+          <Item><LedgerLookup name='po' label="P/O" /></Item>
         </Grid>
         <Grid size={6}>
           <Item><InvoiceLookup level="1" label="Invoice[1]" /></Item>

@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import Autocomplete, { type AutocompleteChangeDetails, type AutocompleteChangeReason } from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
-import { drillDownLevels } from '../utils';
+import { drillDownLevels } from './utils';
 
 export const FyLookup = ({ name, label }: { label: string, name: string }): ReactNode => {
 
@@ -31,7 +31,7 @@ export const FyLookup = ({ name, label }: { label: string, name: string }): Reac
   }, [searchParams]);
 
   const { data } = useQuery<{ id: string, name: string }[]>({
-    queryKey: ['coa', name, params],
+    queryKey: ['fy', name, params],
     placeholderData: keepPreviousData,
     enabled: true,
     queryFn: async () => {

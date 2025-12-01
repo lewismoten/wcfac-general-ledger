@@ -9,7 +9,7 @@ import Paper from '@mui/material/Paper';
 import { TableVirtuoso, type TableComponents } from 'react-virtuoso';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { SxProps } from '@mui/system/styleFunctionSx';
-import { interpolateColor } from '../utils';
+import { interpolateColor } from './utils';
 import type { Data } from './Data';
 import { columns } from './columns';
 import type { ApiError } from './ApiError';
@@ -106,7 +106,7 @@ export const LedgerTable = () => {
   }, [searchParams]);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<LedgerPage | ApiError>({
-    queryKey: ['legerData', localParams],
+    queryKey: ['ledgerData', localParams],
     initialPageParam: 1,
     getNextPageParam: (lastPage) => "error" in lastPage ? undefined : lastPage.nextPage ?? undefined,
     queryFn: async ({ pageParam }) => {

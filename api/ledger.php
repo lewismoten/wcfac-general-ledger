@@ -18,6 +18,7 @@ $ol2 = isset($_GET['ol2']) ? $_GET['ol2'] : '';
 $dept = isset($_GET['dept']) ? $_GET['dept'] : '';
 $acct = isset($_GET['acct']) ? $_GET['acct'] : '';
 $vend = isset($_GET['vend']) ? $_GET['vend'] : '';
+$po = isset($_GET['po']) ? $_GET['po'] : '';
 $inv = isset($_GET['inv']) ? $_GET['inv'] : '';
 $inv1 = isset($_GET['inv1']) ? $_GET['inv1'] : '';
 $inv2 = isset($_GET['inv2']) ? $_GET['inv2'] : '';
@@ -123,6 +124,13 @@ if(is_filtered_multi($vend)) {
     $values = array_map('trim', explode(',', $vend));
     $placeholders = implode(',', array_fill(0, count($values), '?'));
     $filter .= " AND LEDGER.VENDOR_ID IN($placeholders)";
+    $types .= str_repeat('i', count($values));
+    $params = array_merge($params, $values);
+}
+if(is_filtered_multi($po)) {
+    $values = array_map('trim', explode(',', $po));
+    $placeholders = implode(',', array_fill(0, count($values), '?'));
+    $filter .= " AND LEDGER.PURCHASE_ORDER IN($placeholders)";
     $types .= str_repeat('i', count($values));
     $params = array_merge($params, $values);
 }

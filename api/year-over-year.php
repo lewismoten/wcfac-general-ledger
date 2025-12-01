@@ -20,6 +20,7 @@ $ol2 = isset($_GET['ol2']) ? $_GET['ol2'] : '';
 $dept = isset($_GET['dept']) ? $_GET['dept'] : '';
 $acct = isset($_GET['acct']) ? $_GET['acct'] : '';
 $vend = isset($_GET['vend']) ? $_GET['vend'] : '';
+$po = isset($_GET['po']) ? $_GET['po'] : '';
 $inv = isset($_GET['inv']) ? $_GET['inv'] : '';
 $inv1 = isset($_GET['inv1']) ? $_GET['inv1'] : '';
 $inv2 = isset($_GET['inv2']) ? $_GET['inv2'] : '';
@@ -109,6 +110,9 @@ foreach($series as $name) {
             $seriesColumnPieces[] = "IFNULL(CONCAT(LPAD(VENDOR.Num, 6, '0'), ': ', VENDOR.Name), '[No Vendor]')";
             $seriesJoinPieces[] = "LEFT OUTER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID";
             break;
+        case 'po':
+            $seriesColumnPieces[] = "IFNULL(LPAD(LEDGER.PURCHASE_ORDER, 6, '0'), '[No PO]')";
+            break;
         case 'ol1':
             $seriesColumnPieces[] = "IFNULL(CONCAT(LPAD(COA_OL1.ID, 1, '0'), ': ', COA_OL1.Name), '[No OL1]')";
             $seriesJoinPieces[] = "LEFT OUTER JOIN COA_OL1 ON COA_OL1.ID = LEDGER.ACCOUNT_OL1";
@@ -196,6 +200,13 @@ if(is_filtered_multi($vend)) {
     $values = array_map('trim', explode(',', $vend));
     $placeholders = implode(',', array_fill(0, count($values), '?'));
     $filter .= " AND LEDGER.VENDOR_ID IN($placeholders)";
+    $types .= str_repeat('i', count($values));
+    $params = array_merge($params, $values);
+}
+if(is_filtered_multi($po)) {
+    $values = array_map('trim', explode(',', $po));
+    $placeholders = implode(',', array_fill(0, count($values), '?'));
+    $filter .= " AND LEDGER.PURCHASE_ORDER IN($placeholders)";
     $types .= str_repeat('i', count($values));
     $params = array_merge($params, $values);
 }

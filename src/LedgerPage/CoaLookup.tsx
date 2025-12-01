@@ -1,6 +1,6 @@
 import { useCallback, useMemo, type ReactNode, type SyntheticEvent } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { drillDownLevels } from '../utils';
+import { drillDownLevels } from './utils';
 import TextField from '@mui/material/TextField';
 import Autocomplete, { type AutocompleteChangeDetails, type AutocompleteChangeReason } from '@mui/material/Autocomplete';
 import { useSearchParams } from 'react-router-dom';
