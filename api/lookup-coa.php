@@ -1,5 +1,6 @@
 <?php
 require_once './helpers.php';
+require_once './build_ledger_filter_clause.php';
 
 $id = $_GET['type'];
 $table = '';
@@ -79,58 +80,10 @@ $where = '';
 $types = '';
 $params = [];
 
-$fy = isset($_GET['fy']) ? $_GET['fy'] : '';
-$re = isset($_GET['re']) ? $_GET['re'] : '';
-$ol1 = isset($_GET['ol1']) ? $_GET['ol1'] : '';
-$ol1Func = isset($_GET['ol1Func']) ? $_GET['ol1Func'] : '';
-$ol2 = isset($_GET['ol2']) ? $_GET['ol2'] : '';
-$dept = isset($_GET['dept']) ? $_GET['dept'] : '';
-$acct = isset($_GET['acct']) ? $_GET['acct'] : '';
-$vend = isset($_GET['vend']) ? $_GET['vend'] : '';
+$where = build_ledger_filter_clause($types, $params);
 
-if(is_filtered_multi($fy)) {
-    $where .= " AND CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN DATE_FORMAT(CHECK_DATE, '%Y')+1 ELSE DATE_FORMAT(CHECK_DATE, '%Y') END IN($fy)";
-}
-
-if(is_filtered($re)) {
-    $where .= " AND LEDGER.ACCOUNT_RE = ?";
-    $types .= "i";
-    $params[] = intval($re);
-}
-if((is_filtered($re) && $re === '4') || !is_filtered($re)) {
-    if(is_filtered($ol1)) {
-        $where .= " AND LEDGER.ACCOUNT_OL1 = ?";
-        $types .= "i";
-        $params[] = intval($ol1);
-    }
-    if(is_filtered($ol1Func)) {
-        $where .= " AND LEDGER.ACCOUNT_OL1_FUNC = ?";
-        $types .= "i";
-        $params[] = intval($ol1Func);
-    }
-    if(is_filtered($ol2)) {
-        $where .= " AND LEDGER.ACCOUNT_OL2 = ?";
-        $types .= "i";
-        $params[] = intval($ol2);
-    }
-    if(is_filtered($dept)) {
-        $where .= " AND LEDGER.ACCOUNT_DEPT = ?";
-        $types .= "i";
-        $params[] = intval($dept);
-    }
-}
-if(is_filtered($acct)) {
-    $where .= " AND LEDGER.ACCOUNT_NO = ?";
-    $types .= "i";
-    $params[] = intval($acct);
-}
-if(is_filtered($vend)) {
-    $where .= " AND LEDGER.VENDOR_ID = ?";
-    $types .= "i";
-    $params[] = intval($vent);
-}
 if($where != '') {
-    $where = "WHERE 1=1 $where";
+    $where = "WHERE $where";
 }
 
 $sql = "SELECT DISTINCT
