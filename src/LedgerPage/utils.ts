@@ -1,20 +1,28 @@
-export const drillDownLevels = [
-  'fy',
-  'bat',
-  're',
-  'ol1',
-  'ol1Func',
-  'ol2',
-  'dept',
-  'acct',
-  'vend',
-  'po',
-  'chk',
-  'inv1',
-  'inv2',
-  'inv3',
-  'inv'
+interface Level {
+  field: string;
+  name: string;
+}
+
+export const levels: Level[] = [
+  {field: 'fy', name: 'Fiscal Year'},
+  {field: 'bat', name: 'Batch'},
+  {field: 're', name: 'Revenue/Expenditure'},
+  {field: 'ol1', name: 'Object Level 1'},
+  {field: 'ol1Func', name: 'Function'},
+  {field: 'ol2', name: 'Object Level 2'},
+  {field: 'dept', name: 'Department'},
+  {field: 'acct', name: 'Account'},
+  {field: 'vend', name: 'Vendor'},
+  {field: 'po', name: 'Purchase Order'},
+  {field: 'chk', name: 'Check'},
+  {field: 'inv1', name: 'Invoice part 1'},
+  {field: 'inv2', name: 'Invoice part 2'},
+  {field: 'inv3', name: 'Invoice part 3'},
+  {field: 'inv', name: 'Invoice'},
+  {field: 'des', name: 'Description'}
 ];
+
+export const drillDownLevels = levels.map(l => l.field);
 
 export const colors = [
   "#3366CC",

@@ -188,6 +188,9 @@ function LedgerPage() {
         <Grid size={SIZE}>
           <InvoiceLookup level="-1" label="Invoice" />
         </Grid>
+        <Grid size={SIZE}>
+          <LedgerLookup name='des' label="Description" />
+        </Grid>
       </Grid>
 
       <SeriesPicker />

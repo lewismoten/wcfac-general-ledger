@@ -3,7 +3,7 @@
 - [ ] Filter Range for Check Date
 - [ ] Filter Range for Invoice Date
 - [ ] Filter Range for Account Paid
-- [ ] Filter Description
+- [x] Filter Description
 - [ ] Filter for days between Invoice/Check Date
 - [ ] Determine if all check dates in a batch always match and update lookup accordingly
 - [ ] Change Grid to display Year, Week, Day, All-Time

@@ -36,7 +36,10 @@ switch($type) {
         $idColumn = "`CHECK_NO`";
         $nameColumn = $idColumn;
         break;
-
+    case 'des':
+        $idColumn = "`DESCRIPTION`";
+        $nameColumn = $idColumn;
+        break;
     default: 
       echo json_encode([
         "error" => "Unknown type",

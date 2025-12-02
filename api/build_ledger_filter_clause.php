@@ -47,6 +47,7 @@ function build_ledger_filter_clause(&$types, &$params) {
   $filters[] = filter_str('inv1', 'LEDGER.INVOICE_NO_1', $types, $params);
   $filters[] = filter_str('inv2', 'LEDGER.INVOICE_NO_2', $types, $params);
   $filters[] = filter_str('inv3', 'LEDGER.INVOICE_NO_3', $types, $params);
+  $filters[] = filter_str('des', 'LEDGER.DESCRIPTION', $types, $params);
 
   return implode(' AND ', array_values(array_filter($filters, 'is_string')));
 }
