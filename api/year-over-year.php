@@ -146,6 +146,9 @@ foreach($series as $name) {
         case 'inv3':
             $seriesColumnPieces[] = "IFNULL(LEDGER.INVOICE_NO_3, '[No Invoice 3]')";
             break;
+        case 'des':
+            $seriesColumnPieces[] = "IFNULL(LEDGER.DESCRIPTION, '[No Description]')";
+            break;
     }
 }
 if(sizeof($seriesColumnPieces) === 0) {
