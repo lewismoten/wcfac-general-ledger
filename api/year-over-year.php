@@ -163,13 +163,17 @@ if(sizeof($seriesJoinPieces) > 0) {
 }
 
 $filter = build_ledger_filter_clause($types, $params);
-
+$joinVendor = '';
 if($filter != '') {
     $filter = "WHERE $filter";
+    if(str_contains($filter, 'VENDOR') && !str_contains($seriesJoin, 'VENDOR')) {
+        $joinVendor = 'INNER JOIN VENDOR ON LEDGER.VENDOR_ID = VENDOR.ID';
+    }
 }
 
 $fromWhere = "FROM LEDGER 
         $seriesJoin
+        $joinVendor
         $filter
         GROUP BY 
             CONCAT('', $seriesColumn),
@@ -207,7 +211,7 @@ $stmt->fetch();
 $stmt->free_result();
 $stmt->close();
 
-$offset = (($pageNumber -1) * $pageSize);
+$offset = $pageNumber <= 1 ? 0 : (($pageNumber -1) * $pageSize);
 
 $sql = "SELECT 
             CONCAT('', $seriesColumn) AS `series`,

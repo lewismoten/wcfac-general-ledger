@@ -40,7 +40,7 @@ function build_ledger_filter_clause(&$types, &$params) {
   $filters[] = filter_num('ol2', 'LEDGER.ACCOUNT_OL2', $types, $params);
   $filters[] = filter_num('dept', 'LEDGER.ACCOUNT_DEPT', $types, $params);
   $filters[] = filter_num('acct', 'LEDGER.ACCOUNT_NO', $types, $params);
-  $filters[] = filter_num('vend', 'LEDGER.VENDOR_ID', $types, $params);
+  $filters[] = filter_num('vend', '`VENDOR`.Num', $types, $params);
   $filters[] = filter_num('po', 'LEDGER.PURCHASE_ORDER', $types, $params);
   $filters[] = filter_num('chk', 'LEDGER.CHECK_NO', $types, $params);
   $filters[] = filter_str('inv', 'LEDGER.INVOICE_NO', $types, $params);

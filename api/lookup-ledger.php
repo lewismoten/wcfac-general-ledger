@@ -80,6 +80,9 @@ $filter = build_ledger_filter_clause($types, $params);
 
 if($filter != '') {
     $where .= " AND $filter";
+    if(str_contains($where, 'VENDOR')) {
+        $joinVendor = 'INNER JOIN VENDOR ON LEDGER.VENDOR_ID = VENDOR.ID';
+    }
 }
 
 $sql = "SELECT DISTINCT
@@ -87,6 +90,7 @@ $sql = "SELECT DISTINCT
             $nameColumn as `name`
         FROM
             LEDGER
+            $joinVendor
         $where     
         ORDER BY
             $nameColumn ASC

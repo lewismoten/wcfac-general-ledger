@@ -6,6 +6,7 @@ $id = $_GET['type'];
 $table = '';
 $fk = '';
 $sql = '';
+$idColumn = 'ID';
 
 switch($id) {
     case 're': 
@@ -42,6 +43,7 @@ switch($id) {
         $table = "VENDOR"; 
         $fk = 'VENDOR_ID';
         $name = "CONCAT(LPAD(`$table`.Num, 6, '0'), ': ', Name)";
+        $idColumn = 'Num';
         break;
     default: 
       echo json_encode([
@@ -81,20 +83,25 @@ $types = '';
 $params = [];
 
 $where = build_ledger_filter_clause($types, $params);
+$joinVendor = '';
 
 if($where != '') {
     $where = "WHERE $where";
+    if($table != 'VENDOR' && str_contains($where, 'VENDOR')) {
+        $joinVendor = 'INNER JOIN VENDOR ON LEDGER.VENDOR_ID = VENDOR.ID';
+    }
 }
 
 $sql = "SELECT DISTINCT
-            `$table`.ID as `id`,
+            `$table`.$idColumn as `id`,
             $name as `name`
         FROM
             `$table`
             INNER JOIN LEDGER ON LEDGER.`$fk` = `$table`.ID
+            $joinVendor
         $where
         ORDER BY
-            `$table`.ID ASC
+            `$table`.$idColumn ASC
         LIMIT 10000";
 
 $stmt = $conn->prepare($sql);

@@ -55,6 +55,8 @@ if(is_filtered($pageSize)) {
         ]);
         exit;
     }
+} else {
+    $pageSize = 1200;
 }
 $config = require "config.php";
 $db = $config["db"];
@@ -117,6 +119,17 @@ $stmt->bind_result($count, $maxNet, $minNet);
 $stmt->fetch();
 $stmt->free_result();
 $stmt->close();
+if($count === 0) {
+    echo json_encode([ 
+        "rows" => [],
+        "total" => $count,
+        "nextPage" => null,
+        "maxNet" => $maxNet,
+        "minNet" => $minNet,
+        "medianNet" => null
+    ], JSON_PRETTY_PRINT);
+    exit;
+}
 
 $medianLimit = ($count % 2 === 0) ? 2 : 1;
 $medianOffset = (int)floor(($count - 1) / 2);
@@ -159,7 +172,7 @@ $stmt->fetch();
 $stmt->free_result();
 $stmt->close();
 
-$pageOffset = (($pageNumber -1) * $pageSize);
+$pageOffset = $pageNumber <= 1 ? 0 : (($pageNumber -1) * $pageSize);
 
 $sql = "SELECT
             LEDGER.ID as `id`,
