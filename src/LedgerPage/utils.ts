@@ -47,10 +47,10 @@ export const colors = [
   "#3B3EAC"
 ];
 
-export const formatCurrency = (value: any) => value.toLocaleString("en-US", {
+export const formatCurrency = (value: any) => value ? value.toLocaleString("en-US", {
   style: "currency",
   currency: "USD", maximumFractionDigits: 2
-});
+}) : void 0;
 
 export const formatCurrencyAsUnit = (value: any): string => {
 

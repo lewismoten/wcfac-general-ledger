@@ -2,6 +2,9 @@
 require_once './helpers.php';
 require_once './build_ledger_filter_clause.php';
 
+// Drill Down by Department -> Description -> [Sum(2024 checks), Sum(2025 checks)]
+
+
 $sql = "";
 $types = '';
 $params = [];
@@ -25,7 +28,7 @@ $inv1 = isset($_GET['inv1']) ? $_GET['inv1'] : '';
 $inv2 = isset($_GET['inv2']) ? $_GET['inv2'] : '';
 $inv3 = isset($_GET['inv3']) ? $_GET['inv3'] : '';
 $pageNumber = isset($_GET['pg']) ? $_GET['pg'] : '1';
-$pageSize = isset($_GET['ps']) ? $_GET['ps'] : '500';
+$pageSize = isset($_GET['ps']) ? $_GET['ps'] : '1200';
 
 if(is_filtered($pageNumber)) {
     $pageNumber = intval($pageNumber);
@@ -48,7 +51,7 @@ if(is_filtered($pageSize)) {
         ]);
         exit;
     }
-    if($pageSize > 500) {
+    if($pageSize > 1200) {
         echo json_encode([
             "error" => "Page size too large",
             "details" => $pageSize
@@ -84,10 +87,8 @@ if($filter != '') {
     $filter = "WHERE $filter";
 }
 
-$sql = "SELECT 
-            COUNT(1),
-            MAX(LEDGER.NET_AMOUNT) as `MaxNet`,
-            MIN(LEDGER.NET_AMOUNT) as `MinNet`
+$sql = "SELECT DISTINCT DATE_FORMAT(CHECK_DATE, '%Y') + 
+    CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN 1 ELSE 0 END AS `FY`
         FROM LEDGER
             LEFT OUTER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID
             $filter";
@@ -115,87 +116,56 @@ if(!$stmt->execute()) {
   ]);
     exit;
 }
-$stmt->bind_result($count, $maxNet, $minNet);
-$stmt->fetch();
+
+// get years
+$result = $stmt->get_result();
+if (!$result) {
+  echo json_encode([
+      "error" => "Get results failed",
+      "details" => $stmt->error
+  ]);
+  exit;
+}
+$years = [];
+while ($row = $result->fetch_assoc()) {
+    $years[] = $row['FY'];
+}
 $stmt->free_result();
 $stmt->close();
-if($count === 0) {
+if(sizeof($years) === 0) {
     echo json_encode([ 
+        "years" => [],
         "rows" => [],
-        "total" => $count,
-        "nextPage" => null,
-        "maxNet" => $maxNet,
-        "minNet" => $minNet,
-        "medianNet" => null
     ], JSON_PRETTY_PRINT);
     exit;
 }
 
-$medianLimit = ($count % 2 === 0) ? 2 : 1;
-$medianOffset = (int)floor(($count - 1) / 2);
-
-$sql = "SELECT AVG(sub.NET_AMOUNT) AS `MedianNet`
-FROM (
-    SELECT LEDGER.NET_AMOUNT 
-    FROM LEDGER
-    LEFT OUTER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID 
-    $filter
-    ORDER BY NET_AMOUNT
-    LIMIT $medianLimit
-    OFFSET $medianOffset
-    ) AS sub";
-$stmt = $conn->prepare($sql);
-
-if(!$stmt) {
-  echo json_encode([
-      "error" => "Prepare statement failed",
-      "details" => $conn->error,
-      "sql" => $sql
-  ]);
-    exit;
-}
-
-if ($types !== '') {
-    $stmt->bind_param($types, ...$params);
-}
-
-if(!$stmt->execute()) {
-  echo json_encode([
-      "error" => "Query execution failed",
-      "details" => $conn->error,
-      "sql" => $sql
-  ]);
-    exit;
-}
-$stmt->bind_result($medianNet);
-$stmt->fetch();
-$stmt->free_result();
-$stmt->close();
-
-$pageOffset = $pageNumber <= 1 ? 0 : (($pageNumber -1) * $pageSize);
-
 $sql = "SELECT
-            LEDGER.ID as `id`,
-            LPAD(LEDGER.PURCHASE_ORDER, 7, '0') as `poNo`,
-            LPAD(VENDOR.Num, 6, '0') as `vendorNo`,
-            VENDOR.Name as `vendorName`,
-            IFNULL(LEDGER.INVOICE_NO, '') as `invoiceNo`,
-            DATE_FORMAT(LEDGER.INVOICE_DATE, '%c/%d/%Y') as `invoiceDate`,
-            CONCAT(LPAD(LEDGER.ACCOUNT_FUND, 4, '0'),'-', LPAD(LEDGER.ACCOUNT_DEPT, 6, '0'),'-', LPAD(LEDGER.ACCOUNT_NO, 5, '0'),'-   -   -') as `accountNo`,
-            DATE_FORMAT(LEDGER.ACCOUNT_PAID, '%Y/%m') as `accountPaid`,
-            LEDGER.NET_AMOUNT as `netAmount`,
-            LEDGER.CHECK_NO as `checkNo`,
-            DATE_FORMAT(LEDGER.CHECK_DATE, '%c/%d/%Y') as `checkDate`,
-            LEDGER.DESCRIPTION as `description`,
-            LEDGER.BATCH as `batchNo`
+            COA_DEPT.ID AS `departmentNo`,
+            COA_DEPT.Name AS `departmentName`,
+            ACCOUNT_NO AS `accountNo`,
+            LEDGER.DESCRIPTION as `accountDescription`,
+            VENDOR.Num AS `vendorNo`,
+            VENDOR.Name AS `vendorName`,
+            DATE_FORMAT(CHECK_DATE, '%Y') + CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN 1 ELSE 0 END AS `fiscalYear`,
+            SUM(LEDGER.NET_AMOUNT) AS `netAmount`
         FROM LEDGER
+            INNER JOIN COA_DEPT ON LEDGER.ACCOUNT_DEPT = COA_DEPT.ID
             LEFT OUTER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID
             $filter
+        GROUP BY
+            COA_DEPT.ID,
+            COA_DEPT.Name,
+            LEDGER.DESCRIPTION,
+            VENDOR.Num,
+            VENDOR.Name,
+            DATE_FORMAT(CHECK_DATE, '%Y') + CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN 1 ELSE 0 END
         ORDER BY
-            CHECK_DATE ASC,
-            VENDOR.Num ASC
-        LIMIT $pageSize
-        OFFSET $pageOffset
+            COA_DEPT.Name ASC,
+            LEDGER.DESCRIPTION ASC,
+            VENDOR.Name ASC,
+            DATE_FORMAT(CHECK_DATE, '%Y') + CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN 1 ELSE 0 END ASC
+        LIMIT 10000
         ";
 
 $sqlselect = $sql;
@@ -231,11 +201,47 @@ if (!$result) {
   ]);
   exit;
 }
-$rows = [];
+$departments = [];
 
 while ($row = $result->fetch_assoc()) {
-    // $row['BATCH'] = (int)$row['BATCH'];
-    $rows[] = $row;
+    $dept_no = $row['departmentNo'];
+    $dept_name = $row['departmentName'];
+    $account_no = $row['accountNo'];
+    $account_desc = $row['accountDescription'];
+    $vendor_no = $row['vendorNo'];
+    $vendor_name = $row['vendorName'];
+    $fiscalYear = $row['fiscalYear'];
+    $amount = (float)$row['netAmount'];
+
+    if(!isset($departments[$dept_no])) {
+        $departments[$dept_no] = [
+            'no' => $dept_no,
+            'name' => $dept_name,
+            'accounts' => []
+        ];
+    }
+
+    if(!isset($departments[$dept_no]['accounts'][$account_no])) {
+        $departments[$dept_no]['accounts'][$account_no] = [
+            'no' => $account_no,
+            'name' => $account_desc,
+            'vendors' => []
+        ];
+    }
+
+    if (!isset($departments[$dept_no]['accounts'][$account_no]['vendors'][$vendor_no])) {
+        $departments[$dept_no]['accounts'][$account_no]['vendors'][$vendor_no] = [
+            'no' => $vendor_no,
+            'name' => $vendor_name
+        ];
+    }
+
+    if (!isset($departments[$dept_no]['accounts'][$account_no]['vendors'][$vendor_no][$fiscalYear])) {
+        $departments[$dept_no]['accounts'][$account_no]['vendors'][$vendor_no][$fiscalYear] = 0;
+    }
+
+    $departments[$dept_no]['accounts'][$account_no]['vendors'][$vendor_no][$fiscalYear] += $amount;
+
 }
 
 $stmt->free_result();
@@ -247,12 +253,8 @@ $nextPage = null;
 if($pageCount > $pageNumber) $nextPage = $pageNumber + 1;
 
 echo json_encode([ 
-    "rows" => $rows,
-    "total" => $count,
-    "nextPage" => $nextPage,
-    "maxNet" => $maxNet,
-    "minNet" => $minNet,
-    "medianNet" => $medianNet
+    "years" => $years,
+    "departments" => $departments
 ], JSON_PRETTY_PRINT);
 } catch(mysqli_sql_exception $e) {
     error_log($e->getMessage());

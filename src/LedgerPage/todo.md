@@ -19,6 +19,7 @@
   - [ ] Display "chips" in simple interface
 - [ ] Ability to download matches as CSV / Excel Spreadsheet
 - [ ] Display QR Code that can be downloaded
+- [ ] Control line thickness, dash pattern, or mono-colors based on distinct label level
 - [ ] Convert pagination for chart to MUI control
 - [ ] Set Lookups to query API based on what is searched to bypass limit
 - [ ] Use/display account description overrides from COA

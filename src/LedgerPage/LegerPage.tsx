@@ -13,6 +13,7 @@ import Grid from '@mui/material/Grid';
 import { useSearchParams } from 'react-router-dom';
 import type { ApiError } from './ApiError';
 import { LedgerLookup } from './LedgerLookup';
+import { LedgerReport } from './LedgerReport';
 
 interface GraphData {
   count: number,
@@ -201,6 +202,7 @@ function LedgerPage() {
       <MonthlyChart data={monthlyData} series={displayedSeries} />
       <TotalChart data={totalData} series={displayedSeries} />
       <LedgerTable />
+      <LedgerReport />
 
     </>
   )
