@@ -143,7 +143,7 @@ if(sizeof($years) === 0) {
 $sql = "SELECT
             COA_DEPT.ID AS `departmentNo`,
             COA_DEPT.Name AS `departmentName`,
-            ACCOUNT_NO AS `accountNo`,
+            LEDGER.ACCOUNT_NO AS `accountNo`,
             LEDGER.DESCRIPTION as `accountDescription`,
             VENDOR.Num AS `vendorNo`,
             VENDOR.Name AS `vendorName`,
@@ -156,14 +156,15 @@ $sql = "SELECT
         GROUP BY
             COA_DEPT.ID,
             COA_DEPT.Name,
+            LEDGER.ACCOUNT_NO,
             LEDGER.DESCRIPTION,
             VENDOR.Num,
             VENDOR.Name,
             DATE_FORMAT(CHECK_DATE, '%Y') + CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN 1 ELSE 0 END
         ORDER BY
-            COA_DEPT.Name ASC,
-            LEDGER.DESCRIPTION ASC,
-            VENDOR.Name ASC,
+            COA_DEPT.ID ASC,
+            LEDGER.ACCOUNT_NO ASC,
+            VENDOR.Num ASC,
             DATE_FORMAT(CHECK_DATE, '%Y') + CASE WHEN DATE_FORMAT(CHECK_DATE, '%m') >= 7 THEN 1 ELSE 0 END ASC
         LIMIT 10000
         ";
