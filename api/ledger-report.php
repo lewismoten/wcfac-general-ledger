@@ -135,7 +135,7 @@ $stmt->close();
 if(sizeof($years) === 0) {
     echo json_encode([ 
         "years" => [],
-        "rows" => [],
+        "departments" => [],
     ], JSON_PRETTY_PRINT);
     exit;
 }

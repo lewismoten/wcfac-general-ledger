@@ -4,6 +4,7 @@ import type { ApiError } from './ApiError';
 import { useSearchParams } from 'react-router-dom';
 import { formatCurrency } from './utils';
 import Grid from '@mui/material/Grid';
+import { type SxProps } from '@mui/system';
 
 interface LedgerReportVendor {
   no: number,
@@ -24,34 +25,83 @@ type LedgerReport = {
   years: number[],
   departments: {[key:number]: LedgerReportDepartment}
 }
-export const Vendor = ({report, dept, acct, vend}: {report: LedgerReport, dept: number, acct: number, vend: number}) => {
+export const Vendor = ({report, dept, acct, vend, index}: {report: LedgerReport, dept: number, acct: number, vend: number, index: number}) => {
   const vendor = report.departments[dept].accounts[acct].vendors[vend];
-  return <>
+   const lineStyle: SxProps = {
+    fontSize: '8pt',
+    background: index % 2 === 0 ? '#ffffff' : '#f0f0f0'
+  };
+   const lineNumStyle: SxProps = {
+    ...lineStyle,
+    textAlign: 'center'
+  };
+  const sumStyle: SxProps = {...lineStyle, textAlign: 'right' };
+    return <>
   <Grid size={2}>&nbsp;</Grid>
-  <Grid size={1}>{vend.toString().padStart(6, '0')}</Grid>
-  <Grid size={9-report.years.length}>{vendor.name}</Grid>
+  <Grid size={1} sx={lineNumStyle}>{vend.toString().padStart(6, '0')}</Grid>
+  <Grid size={9-report.years.length} sx={lineStyle}>{vendor.name}</Grid>
     {report.years.map(year => 
-    <Grid key={year} size={1} textAlign="right">{ formatCurrency(vendor[year]) ?? <>&nbsp;</> }</Grid>)}    
+    <Grid key={year} size={1} sx={sumStyle}>{ formatCurrency(vendor[year]) ?? <>&nbsp;</> }</Grid>)}    
   </>;
 }
 export const Account = ({report, dept, acct}: {report: LedgerReport, dept: number, acct: number}) => {
-  const vendor_nos = Object.keys(report.departments[dept].accounts[acct].vendors).map(no => parseInt(no));
-  return <>
+  const account = report.departments[dept].accounts[acct];
+  const vendors = account.vendors;
+  const vendorNos = Object.keys(account.vendors).map(no => parseInt(no));
+  const acctSums = report.years.map(year => 
+      vendorNos.reduce((sum, vendorNo) => sum + (vendors[vendorNo][year] ?? 0), 0)
+  );
+   const accountStyle: SxProps = {
+    backgroundColor: '#d0d0d0', 
+    fontWeight: 'bold', 
+    borderBottom: '1px solid black',
+    fontSize: '10pt'
+  };
+   const accountNumStyle: SxProps = {
+    ...accountStyle,
+    borderLeft: '1px solid black',
+    textAlign: 'center'
+  };
+  const sumStyle: SxProps = {...accountStyle, textAlign: 'right', borderLeft: undefined };
+ return <>
   <Grid size={1}>&nbsp;</Grid>
-  <Grid size={1}>{acct.toString().padStart(5, '0')}</Grid>
-  <Grid size={10-report.years.length}>
+  <Grid size={1} sx={accountNumStyle}>{acct.toString().padStart(5, '0')}</Grid>
+  <Grid size={10-report.years.length} sx={accountStyle}>
     {report.departments[dept].accounts[acct].name}
   </Grid>
-  {report.years.map(year => <Grid key={year} size={1}>&nbsp;</Grid>)}
-{vendor_nos.map(vendor_no => <Vendor key={vendor_no} dept={dept} acct={acct} vend={vendor_no} report={report} />)}
+  {acctSums.map((sum, idx) => <Grid key={idx} size={1} sx={sumStyle}>{sum === 0 ? <>&nbsp;</> : formatCurrency(sum)}</Grid>)}
+{vendorNos.map((vendorNo, idx) => <Vendor key={vendorNo} index={idx} dept={dept} acct={acct} vend={vendorNo} report={report} />)}
   </>;
 }
 export const Department = ({report, no}: {report: LedgerReport, no: number}) => {
-  const account_nos = Object.keys(report.departments[no].accounts).map(no => parseInt(no));
+  const department = report.departments[no];
+  const account_nos = Object.keys(department.accounts).map(no => parseInt(no));
+  const deptSums = report.years.map(year => 
+    account_nos.reduce((deptSum, acct) => {
+      const vendors = department.accounts[acct].vendors;
+      const vendorNos = Object.keys(vendors).map(key => parseInt(key));
+      const vendorSum = vendorNos.reduce((sum, vendorNo) => sum + (vendors[vendorNo][year] ?? 0), 0);
+      return deptSum + vendorSum;
+    }, 0)
+  );
+
+  const deptStyle: SxProps = {
+    backgroundColor: '#b0b0b0', 
+    fontWeight: 'bold', 
+    borderTop: '1px solid black', 
+    borderBottom: '1px solid black',
+    fontSize: '12pt'
+  };
+  const deptNumStyle: SxProps = {
+    ...deptStyle,
+    borderLeft: '1px solid black', 
+    textAlign: 'center'
+  };
+  const sumStyle: SxProps = {...deptStyle, textAlign: 'right' };
   return <>
-  <Grid size={1}>{no.toString().padStart(6, '0')}</Grid>
-  <Grid size={11-report.years.length}>{report.departments[no].name}</Grid>
-  {report.years.map(year => <Grid key={year} size={1}>&nbsp;</Grid>)}
+  <Grid size={1} sx={deptNumStyle}>{no.toString().padStart(6, '0')}</Grid>
+  <Grid size={11-report.years.length} sx={deptStyle}>{department.name}</Grid>
+  {deptSums.map((sum, idx) => <Grid key={idx} sx={sumStyle} size={1}>{sum === 0 ? <>&nbsp;</> : formatCurrency(sum)}</Grid>)}
 {account_nos.map(account_no => <Account key={account_no} dept={no} acct={account_no} report={report} />)}
   </>;
 }
@@ -86,9 +136,18 @@ export const LedgerReport = () => {
   if("error" in data) {
     return <p>{data.error}</p>
   }
+  if(!("departments" in data) 
+    || (Array.isArray(data.departments) && data.departments.length === 0) 
+  || Object.keys(data.departments).length === 0
+) {
+    return <>No information to display.</>
+  }
 
-  return <Grid container spacing={1} border={1}>
-          <Grid size={12-data.years.length}>Description</Grid>
+  return <Grid container spacing={0} border={1}>
+          <Grid size={1}>Dept No.</Grid>
+          <Grid size={1}>Acct No.</Grid>
+          <Grid size={1}>Vend No.</Grid>
+          <Grid size={9-data.years.length}>Vendor Name</Grid>
           {data.years.map(year => <Grid key={year} size={1}>{year}</Grid>)}
           <Departments report={data} />
           </Grid>
