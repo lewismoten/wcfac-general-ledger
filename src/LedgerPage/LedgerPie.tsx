@@ -1,0 +1,213 @@
+import { useMemo } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import type { ApiError } from './ApiError';
+import { useSearchParams } from 'react-router-dom';
+import { colors, formatCurrency } from './utils';
+import {
+  Tooltip,
+  PieChart,
+  Pie,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
+
+interface LedgerReportVendor {
+  no: number,
+  name: string,
+  [key:number]: number
+}
+interface LedgerReportAccount {
+  no: number,
+  name: string,
+  vendors: {[key:number]: LedgerReportVendor}
+}
+interface LedgerReportDepartment {
+  no: number,
+  name: string,
+  accounts: {[key:number]: LedgerReportAccount}
+}
+type LedgerReport = {
+  years: number[],
+  departments: {[key:number]: LedgerReportDepartment}
+}
+export const LedgerPie = () => {
+  const [searchParams] = useSearchParams();
+
+  const localParams = useMemo(() => {
+    const params = new URLSearchParams(searchParams);
+    ['series', 'pg', 'ps'].forEach(key => {
+      if (params.has(key)) params.delete(key);
+    });
+    return params.toString();
+  }, [searchParams]);
+
+  const { data } = useQuery<LedgerReport | ApiError>({
+    queryKey: ['ledger-report', localParams],
+    placeholderData: keepPreviousData,
+    enabled: true,
+    queryFn: async () => {
+      const res = await fetch(`/api/ledger-report.php?${localParams}`);
+      return res.json();
+    }
+  });
+
+  const { deptData, acctData, vendData } = useMemo(() => {
+    type PieRow = { id: number; name: string; value: number; parentId?: number };
+
+    const deptArr: PieRow[] = [];
+    const acctArr: PieRow[] = [];
+    const vendArr: PieRow[] = [];
+
+    if (data === null || data === void 0 || "error" in data) return {
+      deptData: deptArr,
+      acctData: acctArr,
+      vendData: vendArr,
+    };
+
+    const { years, departments } = data ?? {};
+    const yearList = years ?? [];
+
+    Object.keys(departments).forEach(deptKey => {
+      const deptNo = parseInt(deptKey, 10);
+      const department = departments[deptNo];
+
+      let deptTotal = 0;
+
+      Object.keys(department.accounts).forEach(acctKey => {
+        const acctNo = parseInt(acctKey, 10);
+        const account = department.accounts[acctNo];
+
+        let acctTotal = 0;
+
+        Object.keys(account.vendors).forEach(vendKey => {
+          const vendNo = parseInt(vendKey, 10);
+          const vendor = account.vendors[vendNo];
+
+          const vendorTotal = yearList.reduce(
+            (sum, year) => sum + (vendor[year] ?? 0),
+            0
+          );
+
+          if (vendorTotal > 0) {
+            vendArr.push({
+              id: vendNo,
+              name: vendor.name,
+              value: vendorTotal,
+              parentId: acctNo,
+            });
+          }
+
+          acctTotal += vendorTotal;
+        });
+
+        if (acctTotal > 0) {
+          acctArr.push({
+            id: acctNo,
+            name: account.name,
+            value: acctTotal,
+            parentId: deptNo,
+          });
+        }
+
+        deptTotal += acctTotal;
+      });
+
+      if (deptTotal > 0) {
+        deptArr.push({
+          id: deptNo,
+          name: department.name,
+          value: deptTotal,
+        });
+      }
+    });
+
+    return {
+      deptData: deptArr,
+      acctData: acctArr,
+      vendData: vendArr,
+    };
+  }, [data]);
+
+  if (data === null || data === void 0) {
+    return null;
+  }
+  if ("error" in data) {
+    return <p>{data.error}</p>;
+  }
+
+  if (
+    !("departments" in data) ||
+    (Array.isArray(data.departments) && data.departments.length === 0) ||
+    Object.keys(data.departments).length === 0
+  ) {
+    return <>No information to display.</>;
+  }
+
+  const renderLabel = (prefix:string, pad: number) => (props: any) => {
+    const { cx, cy, midAngle, innerRadius, outerRadius, id } = props;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+
+    const RADIAN = Math.PI / 180;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="#fff"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={12}
+        fontWeight="bold"
+      >
+        {prefix}: {id.toString().padStart(pad, '0')}
+      </text>
+    );
+  };
+
+  return (
+    <div style={{ width: 1000, height: 1000 }}>
+      <ResponsiveContainer>
+        <PieChart>
+          <Tooltip
+            formatter={(value: number) => formatCurrency(value)}
+          />
+          <Pie
+            data={deptData}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={80}
+            outerRadius={220}
+            label={renderLabel('Dpt', 6)}
+          >
+            {deptData.map((entry, index) => (<Cell key={`dept-${entry.id}`} fill={colors[index % colors.length]} />))}
+            </Pie>
+
+          <Pie
+            data={acctData}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={240}
+            outerRadius={360}
+            label={renderLabel('Act', 5)}
+          >
+            {acctData.map((entry, index) => (<Cell key={`acct-${entry.id}`} fill={colors[index % colors.length]} />))}
+            </Pie>
+
+          <Pie
+            data={vendData}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={380}
+            outerRadius={500}
+            label={renderLabel('Vnd', 6)}
+           >
+            {vendData.map((entry, index) => (<Cell key={`vend-${entry.id}`} fill={colors[index % colors.length]} />))}
+            </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+

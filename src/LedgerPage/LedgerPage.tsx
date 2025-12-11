@@ -14,6 +14,8 @@ import { useSearchParams } from 'react-router-dom';
 import type { ApiError } from './ApiError';
 import { LedgerLookup } from './LedgerLookup';
 import { LedgerReport } from './LedgerReport';
+import { LedgerPie } from './LedgerPie';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 interface GraphData {
   count: number,
@@ -35,7 +37,7 @@ interface RawGraphData {
   }[]
 }
 
-function LedgerPage() {
+export const LedgerPage = () => {
 
   const [searchParams] = useSearchParams();
   const [errorMessage, setErrorMessage] = useState('');
@@ -194,6 +196,7 @@ function LedgerPage() {
         </Grid>
       </Grid>
 
+      <ErrorBoundary><LedgerPie /></ErrorBoundary>
       <SeriesPicker />
       {error ? <b>{error.message}</b> : null}
       {isPaged ? `Paged.` : null}
@@ -201,11 +204,9 @@ function LedgerPage() {
       <Paginator totalCount={totalCount} />
       <MonthlyChart data={monthlyData} series={displayedSeries} />
       <TotalChart data={totalData} series={displayedSeries} />
-      <LedgerTable />
-      <LedgerReport />
+      <ErrorBoundary><LedgerTable /></ErrorBoundary>
+      <ErrorBoundary><LedgerReport /></ErrorBoundary>
 
     </>
   )
-}
-
-export default LedgerPage;
+};
