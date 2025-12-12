@@ -166,8 +166,12 @@ export const LedgerPie = () => {
     );
   };
 
+  const width = 800;
+  const height = 800;
+  const maxRadius = Math.min(width, height) / 2;
+
   return (
-    <div style={{ width: 1000, height: 1000 }}>
+    <div style={{ width, height }}>
       <ResponsiveContainer>
         <PieChart>
           <Tooltip
@@ -177,8 +181,8 @@ export const LedgerPie = () => {
             data={deptData}
             dataKey="value"
             nameKey="name"
-            innerRadius={80}
-            outerRadius={220}
+            innerRadius={maxRadius * 0.16}
+            outerRadius={maxRadius * 0.44}
             label={renderLabel('Dpt', 6)}
           >
             {deptData.map((entry, index) => (<Cell key={`dept-${entry.id}`} fill={colors[index % colors.length]} />))}
@@ -188,8 +192,8 @@ export const LedgerPie = () => {
             data={acctData}
             dataKey="value"
             nameKey="name"
-            innerRadius={240}
-            outerRadius={360}
+            innerRadius={maxRadius * 0.48}
+            outerRadius={maxRadius * 0.72}
             label={renderLabel('Act', 5)}
           >
             {acctData.map((entry, index) => (<Cell key={`acct-${entry.id}`} fill={colors[index % colors.length]} />))}
@@ -199,8 +203,8 @@ export const LedgerPie = () => {
             data={vendData}
             dataKey="value"
             nameKey="name"
-            innerRadius={380}
-            outerRadius={500}
+            innerRadius={maxRadius * 0.76}
+            outerRadius={maxRadius * 1.0}
             label={renderLabel('Vnd', 6)}
            >
             {vendData.map((entry, index) => (<Cell key={`vend-${entry.id}`} fill={colors[index % colors.length]} />))}

@@ -25,6 +25,8 @@ type LedgerReport = {
   years: number[],
   departments: {[key:number]: LedgerReportDepartment}
 }
+
+const YEAR_SIZE = 2;
 export const Vendor = ({report, dept, acct, vend, index}: {report: LedgerReport, dept: number, acct: number, vend: number, index: number}) => {
   const vendor = report.departments[dept].accounts[acct].vendors[vend];
    const lineStyle: SxProps = {
@@ -39,9 +41,9 @@ export const Vendor = ({report, dept, acct, vend, index}: {report: LedgerReport,
     return <>
   <Grid size={2}>&nbsp;</Grid>
   <Grid size={1} sx={lineNumStyle}>{vend.toString().padStart(6, '0')}</Grid>
-  <Grid size={9-report.years.length} sx={lineStyle}>{vendor.name}</Grid>
+  <Grid size={9-(report.years.length*YEAR_SIZE)} sx={lineStyle}>{vendor.name}</Grid>
     {report.years.map(year => 
-    <Grid key={year} size={1} sx={sumStyle}>{ formatCurrency(vendor[year]) ?? <>&nbsp;</> }</Grid>)}    
+    <Grid key={year} size={YEAR_SIZE} sx={sumStyle}>{ formatCurrency(vendor[year]) ?? <>&nbsp;</> }</Grid>)}    
   </>;
 }
 export const Account = ({report, dept, acct}: {report: LedgerReport, dept: number, acct: number}) => {
@@ -66,10 +68,10 @@ export const Account = ({report, dept, acct}: {report: LedgerReport, dept: numbe
  return <>
   <Grid size={1}>&nbsp;</Grid>
   <Grid size={1} sx={accountNumStyle}>{acct.toString().padStart(5, '0')}</Grid>
-  <Grid size={10-report.years.length} sx={accountStyle}>
+  <Grid size={10-(report.years.length*YEAR_SIZE)} sx={accountStyle}>
     {report.departments[dept].accounts[acct].name}
   </Grid>
-  {acctSums.map((sum, idx) => <Grid key={idx} size={1} sx={sumStyle}>{sum === 0 ? <>&nbsp;</> : formatCurrency(sum)}</Grid>)}
+  {acctSums.map((sum, idx) => <Grid key={idx} size={YEAR_SIZE} sx={sumStyle}>{sum === 0 ? <>&nbsp;</> : formatCurrency(sum)}</Grid>)}
 {vendorNos.map((vendorNo, idx) => <Vendor key={vendorNo} index={idx} dept={dept} acct={acct} vend={vendorNo} report={report} />)}
   </>;
 }
@@ -100,8 +102,8 @@ export const Department = ({report, no}: {report: LedgerReport, no: number}) => 
   const sumStyle: SxProps = {...deptStyle, textAlign: 'right' };
   return <>
   <Grid size={1} sx={deptNumStyle}>{no.toString().padStart(6, '0')}</Grid>
-  <Grid size={11-report.years.length} sx={deptStyle}>{department.name}</Grid>
-  {deptSums.map((sum, idx) => <Grid key={idx} sx={sumStyle} size={1}>{sum === 0 ? <>&nbsp;</> : formatCurrency(sum)}</Grid>)}
+  <Grid size={11-(report.years.length*YEAR_SIZE)} sx={deptStyle}>{department.name}</Grid>
+  {deptSums.map((sum, idx) => <Grid key={idx} sx={sumStyle} size={YEAR_SIZE}>{sum === 0 ? <>&nbsp;</> : formatCurrency(sum)}</Grid>)}
 {account_nos.map(account_no => <Account key={account_no} dept={no} acct={account_no} report={report} />)}
   </>;
 }
@@ -147,10 +149,9 @@ export const LedgerReport = () => {
           <Grid size={1}>Dept No.</Grid>
           <Grid size={1}>Acct No.</Grid>
           <Grid size={1}>Vend No.</Grid>
-          <Grid size={9-data.years.length}>Vendor Name</Grid>
-          {data.years.map(year => <Grid key={year} size={1}>{year}</Grid>)}
+          <Grid size={9-(data.years.length*YEAR_SIZE)}>Vendor Name</Grid>
+          {data.years.map(year => <Grid key={year} size={YEAR_SIZE} textAlign="right">{year}</Grid>)}
           <Departments report={data} />
           </Grid>
-
 }
 

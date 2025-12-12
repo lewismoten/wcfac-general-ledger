@@ -5,7 +5,7 @@ export const MonthlyChart = ({ data, series }: { data: any[], series: string[] }
 
   if (data === null || data.length === 0) return null;
 
-  return <LineChart responsive width={800} height={400} data={data}>
+  return <LineChart responsive width={800} height={800} data={data}>
     <CartesianGrid strokeDasharray="3 3" />
     <XAxis stroke="#333" dataKey="name" fontSize={10} dy={10} tickLine={true} />
     <YAxis tickFormatter={formatCurrencyAsUnit} />

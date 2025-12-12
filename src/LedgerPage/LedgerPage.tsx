@@ -1,21 +1,20 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type SyntheticEvent } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { CoaLookup } from './CoaLookup';
-import { FyLookup } from './FyLookup';
-import { InvoiceLookup } from './InvoiceLookup';
 import { SeriesPicker } from './SeriesPicker';
 import { MonthlyChart } from './MonthlyChart';
 import { TotalChart } from './TotalChart';
 import { Paginator } from './Paginator';
 import { LedgerTable } from './LedgerTable';
 import Alert from '@mui/material/Alert';
-import Grid from '@mui/material/Grid';
 import { useSearchParams } from 'react-router-dom';
 import type { ApiError } from './ApiError';
-import { LedgerLookup } from './LedgerLookup';
 import { LedgerReport } from './LedgerReport';
 import { LedgerPie } from './LedgerPie';
 import { ErrorBoundary } from '../ErrorBoundary';
+import Tabs from '@mui/material/Tabs';
+import { CustomTabPanel } from '../CustomTabPanel';
+import { Filters } from './Filters';
+import { CustomTab } from '../CustomTab';
 
 interface GraphData {
   count: number,
@@ -41,6 +40,7 @@ export const LedgerPage = () => {
 
   const [searchParams] = useSearchParams();
   const [errorMessage, setErrorMessage] = useState('');
+  const [selectedTab, setSelectedTab] = useState(0);
 
   const { data, error } = useQuery<GraphData>({
     queryKey: ['chartData', searchParams.toString()],
@@ -138,75 +138,67 @@ export const LedgerPage = () => {
     return seriesNames.filter(name => name !== 'name').slice(0, 10);
   }, [seriesNames]);
 
-  const SIZE = { xs: 12, sm:6, md: 3 };
+  const handleTabChange = useMemo(() => (_event: SyntheticEvent, newValue: number) => {
+    console.log('tab changed', newValue, _event);
+    setSelectedTab(newValue);
+  }, [setSelectedTab]);
 
   return (
     <>
       <h1>General Ledger</h1>
       <Alert severity="warning">Not an official resource. Data has been acquired via FOIA by a private citizen and not under the control of Warren County.</Alert>
       {(errorMessage ?? '').trim() === '' ? null : <Alert severity="error">{errorMessage}</Alert>}
-      <Grid container spacing={1}>
-        <Grid  size={SIZE}>
-          <FyLookup name='fy' label="Fiscal Year" />
-        </Grid>
-        <Grid size={SIZE}>
-          <LedgerLookup name='bat' label="Batch" />
-        </Grid>
-        <Grid size={SIZE}>
-          <CoaLookup name='re' label="R/E" />
-        </Grid>
-        <Grid size={SIZE}>
-          <CoaLookup name='ol1' label="OL1" />
-        </Grid>
-        <Grid size={SIZE}>
-          <CoaLookup name='ol1Func' label="Function" />
-        </Grid>
-        <Grid size={SIZE}>
-          <CoaLookup name='ol2' label="OL2" />
-        </Grid>
-        <Grid size={SIZE}>
-          <CoaLookup name='dept' label="Department" />
-        </Grid>
-        <Grid size={SIZE}>
-          <CoaLookup name='acct' label="Account" />
-        </Grid>
-        <Grid size={SIZE}>
-          <CoaLookup name='vend' label="Vendor" />
-        </Grid>
-        <Grid size={SIZE}>
-          <LedgerLookup name='po' label="P/O" />
-        </Grid>
-        <Grid size={SIZE}>
-          <LedgerLookup name='chk' label="Check" />
-        </Grid>
-        <Grid size={SIZE}>
-          <InvoiceLookup level="1" label="Invoice[1]" />
-        </Grid>
-        <Grid size={SIZE}>
-          <InvoiceLookup level="2" label="Invoice[2]" />
-        </Grid>
-        <Grid size={SIZE}>
-          <InvoiceLookup level="3" label="Invoice[3]" />
-        </Grid>
-        <Grid size={SIZE}>
-          <InvoiceLookup level="-1" label="Invoice" />
-        </Grid>
-        <Grid size={SIZE}>
-          <LedgerLookup name='des' label="Description" />
-        </Grid>
-      </Grid>
+      <Tabs
+      value={selectedTab}
+      onChange={handleTabChange}
+      aria-label="Report Tabs"
+      >
+        <CustomTab index={0} label="Filters" />
+        <CustomTab index={1} label="Grouping" />
+        <CustomTab index={2} label="YoY Chart" />
+        <CustomTab index={3} label="Pie Chart" />
+        <CustomTab index={4} label="Sum Chart" />
+        <CustomTab index={5} label="Report" />
+        <CustomTab index={6} label="Data" />
 
-      <ErrorBoundary><LedgerPie /></ErrorBoundary>
-      <SeriesPicker />
-      {error ? <b>{error.message}</b> : null}
-      {isPaged ? `Paged.` : null}
-      <div>Showing {visibleCount} of {totalCount}.</div>
-      <Paginator totalCount={totalCount} />
-      <MonthlyChart data={monthlyData} series={displayedSeries} />
-      <TotalChart data={totalData} series={displayedSeries} />
-      <ErrorBoundary><LedgerTable /></ErrorBoundary>
-      <ErrorBoundary><LedgerReport /></ErrorBoundary>
-
+      </Tabs>
+      <CustomTabPanel index={0} selectedIndex={selectedTab}>
+        <ErrorBoundary>
+          <Filters/>
+        </ErrorBoundary>
+      </CustomTabPanel>
+      <CustomTabPanel index={1} selectedIndex={selectedTab}>
+        <ErrorBoundary>
+          <SeriesPicker />
+        </ErrorBoundary>
+      </CustomTabPanel>
+      <CustomTabPanel index={2} selectedIndex={selectedTab}>
+        <ErrorBoundary>
+          {error ? <b>{error.message}</b> : null}
+          {isPaged ? `Paged.` : null}
+          <div>Showing {visibleCount} of {totalCount}.</div>
+          <Paginator totalCount={totalCount} />
+          <MonthlyChart data={monthlyData} series={displayedSeries} />
+        </ErrorBoundary>
+      </CustomTabPanel>
+      <CustomTabPanel index={3} selectedIndex={selectedTab}>
+        <ErrorBoundary><LedgerPie /></ErrorBoundary>
+      </CustomTabPanel>
+      <CustomTabPanel index={4} selectedIndex={selectedTab}>
+        <ErrorBoundary>
+            <TotalChart data={totalData} series={displayedSeries} />
+        </ErrorBoundary>
+      </CustomTabPanel>
+      <CustomTabPanel index={5} selectedIndex={selectedTab}>
+        <ErrorBoundary>
+            <LedgerReport />
+        </ErrorBoundary>
+      </CustomTabPanel>
+      <CustomTabPanel index={6} selectedIndex={selectedTab}>
+        <ErrorBoundary>
+            <LedgerTable />
+        </ErrorBoundary>
+      </CustomTabPanel>
     </>
   )
 };

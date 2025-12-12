@@ -130,7 +130,7 @@ export const LedgerTable = () => {
     , [data]
   );
   const itemContent = useMemo(() => rowContent(minNet, maxNet, medianNet), [minNet, maxNet, medianNet]);
-  return <Paper style={{ height: 400, width: '100%' }}>
+  return <Paper style={{ height: 800, width: '100%' }}>
     <TableVirtuoso
       data={rows ?? []}
       components={VirtuosoTableComponents}

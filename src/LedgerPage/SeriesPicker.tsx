@@ -1,5 +1,5 @@
 import { useMemo, type ChangeEvent, type ReactNode } from 'react'
-import { drillDownLevels } from './utils';
+import { levels } from './utils';
 import { useSearchParams } from 'react-router-dom';
 
 export const SeriesPicker = (): ReactNode => {
@@ -9,7 +9,7 @@ export const SeriesPicker = (): ReactNode => {
   const values = useMemo(() => {
     const all: string[] = (searchParams.has(name) ? searchParams.get(name)?.split(',') ?? [] : []);
     const nonEmpty = all.filter(s => s.trim() !== '');
-    if (nonEmpty.length === 0) return [drillDownLevels[0]];
+    if (nonEmpty.length === 0) return [levels[0].field];
     return nonEmpty;
 
   }, [name, searchParams]);
@@ -24,13 +24,13 @@ export const SeriesPicker = (): ReactNode => {
     setSearchParams(searchParams);
   }, [searchParams, setSearchParams, values]);
 
-  return <div>{
-    drillDownLevels.map(level => (
-      <><input
+  return <ul>{
+    levels.map(level => (
+      <li key={level.field}><input
         type="checkbox" radioGroup="series-picker"
-        onChange={change} value={level} key={level}
-        checked={values.includes(level)}
-      />{level}</>
+        onChange={change} value={level.field}
+        checked={values.includes(level.field)}
+      />{level.name}</li>
     ))
-  }</div>
+  }</ul>
 }
