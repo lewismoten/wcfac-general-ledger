@@ -2,6 +2,8 @@
 require_once './helpers.php';
 require_once './build_ledger_filter_clause.php';
 
+json_headers();
+
 $id = $_GET['type'];
 $table = '';
 $fk = '';

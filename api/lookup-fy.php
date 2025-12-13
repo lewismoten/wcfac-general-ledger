@@ -1,12 +1,10 @@
 <?php
 require_once './helpers.php';
 
+json_headers();
+
 $config = require "config.php";
 $db = $config["db"];
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
-}
 
 $conn = new mysqli(
     $db["host"],

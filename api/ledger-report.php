@@ -2,6 +2,7 @@
 require_once './helpers.php';
 require_once './build_ledger_filter_clause.php';
 
+json_headers();
 // Drill Down by Department -> Description -> [Sum(2024 checks), Sum(2025 checks)]
 
 

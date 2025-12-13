@@ -116,7 +116,7 @@ export const LedgerTable = () => {
       return res.json();
     }
   });
-  const [rows, minNet, maxNet, medianNet]: [Data[], number, number, number] = useMemo(() => {
+  const [rows, minNet, maxNet, medianNet, total]: [Data[], number, number, number, number] = useMemo(() => {
     const pages = (data?.pages.filter(page => !("error" in page)) || []) as LedgerPage[];
     const lastPage = pages.at(-1);
 
@@ -124,13 +124,15 @@ export const LedgerTable = () => {
       pages.flatMap(page => page.rows) ?? [],
       lastPage?.minNet ?? 0,
       lastPage?.maxNet ?? 0,
-      lastPage?.medianNet ?? 0
+      lastPage?.medianNet ?? 0,
+      lastPage?.total ?? -1
     ];
   }
     , [data]
   );
   const itemContent = useMemo(() => rowContent(minNet, maxNet, medianNet), [minNet, maxNet, medianNet]);
   return <Paper style={{ height: 800, width: '100%' }}>
+    Entries: {total}. Download <a href={`/api/export-csv.php?${localParams}`}>CSV</a>
     <TableVirtuoso
       data={rows ?? []}
       components={VirtuosoTableComponents}

@@ -2,6 +2,8 @@
 require_once './helpers.php';
 require_once './build_ledger_filter_clause.php';
 
+json_headers();
+
 $type = $_GET['type'];
 $table = '';
 $fk = '';
@@ -50,10 +52,6 @@ switch($type) {
 
 $config = require "config.php";
 $db = $config["db"];
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
-}
 
 $conn = new mysqli(
     $db["host"],

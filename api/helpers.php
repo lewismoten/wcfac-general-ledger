@@ -2,13 +2,28 @@
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+
+function common_headers() {
+    header("Cache-Control: no-cache, no-store, must-revalidate");
+    header("Pragma: no-cache");
+    header("Expires: 0");
+}
+function json_headers() {
+    common_headers();
+    header("Content-Type: application/json; charset=UTF-8");
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Methods: GET, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type");
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
+}
+function csv_headers($filename="") {
+    common_headers();
+    header("Content-Type: text/csv; charset=UTF-8");
+    header("Content-Disposition: attachement; filename=$filename");
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);

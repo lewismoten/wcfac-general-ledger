@@ -1,12 +1,11 @@
 # In Progress
-- [ ] Pie Chart for category / sub-category ?
+- [ ] Ability to download matches as CSV / Excel Spreadsheet
 
 # Under consideration
 
 - [ ] Filter Range for Check Date
 - [ ] Filter Range for Invoice Date
 - [ ] Filter Range for Account Paid
-- [x] Filter Description
 - [ ] Filter for days between Invoice/Check Date
   - [ ] Detect missing invoices based on large gaps in days
 - [ ] Determine if all check dates in a batch always match and update lookup accordingly
@@ -20,7 +19,6 @@
 - [ ] Provide simple/advanced filter interface
   - [ ] Search [ string ] Range [start] and [end]
   - [ ] Display "chips" in simple interface
-- [ ] Ability to download matches as CSV / Excel Spreadsheet
 - [ ] Display QR Code that can be downloaded
 - [ ] Control line thickness, dash pattern, or mono-colors based on distinct label level
 - [ ] Convert pagination for chart to MUI control
@@ -35,3 +33,7 @@
 - [ ] Add links in reports, etc. to add additional filters. ie - clicking a vendor number adds that vendor to the filtered list, and hides all other vendors.
 - [ ] Make ledger data columns sortable in table
 - [ ] Mobile Friendly / Responsive
+
+# Done
+- [x] Pie Chart for category / sub-category ?
+- [x] Filter Description
