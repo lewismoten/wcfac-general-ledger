@@ -8,27 +8,77 @@ import {
   PieChart,
   Pie,
   ResponsiveContainer,
-  Cell,
+  Cell
 } from "recharts";
 
 interface LedgerReportVendor {
   no: number,
   name: string,
-  [key:number]: number
+  [key: number]: number
 }
 interface LedgerReportAccount {
   no: number,
   name: string,
-  vendors: {[key:number]: LedgerReportVendor}
+  vendors: { [key: number]: LedgerReportVendor }
 }
 interface LedgerReportDepartment {
   no: number,
   name: string,
-  accounts: {[key:number]: LedgerReportAccount}
+  accounts: { [key: number]: LedgerReportAccount }
 }
 type LedgerReport = {
   years: number[],
-  departments: {[key:number]: LedgerReportDepartment}
+  departments: { [key: number]: LedgerReportDepartment }
+}
+type PieRow = {
+  level: "department" | "account" | "vendor";
+  id: number;
+  name: string;
+  value: number;
+  parentId?: number
+};
+type LedgerTooltipProps = {
+  active?: boolean;
+  payload?: { payload: PieRow }[];
+}
+const LedgerPieTooltip = ({ active, payload }: LedgerTooltipProps) => {
+  if (!active || !payload || payload.length === 0) {
+    return null;
+  }
+
+  const item = payload[0].payload;
+
+  return (
+    <div
+      style={{
+        background: "#fff",
+        border: "1px solid #ccc",
+        padding: "8px 10px",
+        fontSize: "9pt",
+      }}
+    >
+      <div style={{ fontWeight: "bold", marginBottom: 4 }}>
+        {item.level.toUpperCase()}
+      </div>
+
+      <div>
+        <strong>No:</strong>{" "}
+        {item.id.toString().padStart(
+          item.level === "department" ? 6 :
+            item.level === "account" ? 5 : 6,
+          "0"
+        )}
+      </div>
+
+      <div>
+        <strong>Name:</strong> {item.name}
+      </div>
+
+      <div style={{ marginTop: 4, textAlign: "right" }}>
+        <strong>{formatCurrency(item.value)}</strong>
+      </div>
+    </div>
+  );
 }
 export const LedgerPie = () => {
   const [searchParams] = useSearchParams();
@@ -52,7 +102,7 @@ export const LedgerPie = () => {
   });
 
   const { deptData, acctData, vendData } = useMemo(() => {
-    type PieRow = { id: number; name: string; value: number; parentId?: number };
+
 
     const deptArr: PieRow[] = [];
     const acctArr: PieRow[] = [];
@@ -90,6 +140,7 @@ export const LedgerPie = () => {
 
           if (vendorTotal > 0) {
             vendArr.push({
+              level: 'vendor',
               id: vendNo,
               name: vendor.name,
               value: vendorTotal,
@@ -102,6 +153,7 @@ export const LedgerPie = () => {
 
         if (acctTotal > 0) {
           acctArr.push({
+            level: 'account',
             id: acctNo,
             name: account.name,
             value: acctTotal,
@@ -114,6 +166,7 @@ export const LedgerPie = () => {
 
       if (deptTotal > 0) {
         deptArr.push({
+          level: 'department',
           id: deptNo,
           name: department.name,
           value: deptTotal,
@@ -143,14 +196,14 @@ export const LedgerPie = () => {
     return <>No information to display.</>;
   }
 
-  const renderLabel = (prefix:string, pad: number) => (props: any) => {
+  const renderLabel = (prefix: string, pad: number) => (props: any) => {
     const { cx, cy, midAngle, innerRadius, outerRadius, id } = props;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
 
     const RADIAN = Math.PI / 180;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  
+
     return (
       <text
         x={x}
@@ -175,7 +228,7 @@ export const LedgerPie = () => {
       <ResponsiveContainer>
         <PieChart>
           <Tooltip
-            formatter={(value: number) => formatCurrency(value)}
+            content={<LedgerPieTooltip />}
           />
           <Pie
             data={deptData}
@@ -186,7 +239,7 @@ export const LedgerPie = () => {
             label={renderLabel('Dpt', 6)}
           >
             {deptData.map((entry, index) => (<Cell key={`dept-${entry.id}`} fill={colors[index % colors.length]} />))}
-            </Pie>
+          </Pie>
 
           <Pie
             data={acctData}
@@ -197,7 +250,7 @@ export const LedgerPie = () => {
             label={renderLabel('Act', 5)}
           >
             {acctData.map((entry, index) => (<Cell key={`acct-${entry.id}`} fill={colors[index % colors.length]} />))}
-            </Pie>
+          </Pie>
 
           <Pie
             data={vendData}
@@ -206,9 +259,9 @@ export const LedgerPie = () => {
             innerRadius={maxRadius * 0.76}
             outerRadius={maxRadius * 1.0}
             label={renderLabel('Vnd', 6)}
-           >
+          >
             {vendData.map((entry, index) => (<Cell key={`vend-${entry.id}`} fill={colors[index % colors.length]} />))}
-            </Pie>
+          </Pie>
         </PieChart>
       </ResponsiveContainer>
     </div>
