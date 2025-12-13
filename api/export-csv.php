@@ -98,7 +98,9 @@ if (!$result) {
   exit;
 }
 
-csv_headers();
+$filename = buildCsvFilename($_GET, 'ledger', ['pg', 'ps', 'series']);
+csv_headers($filename);
+
 $out = fopen('php://output', 'w');
 
 $fields = $result->fetch_fields();

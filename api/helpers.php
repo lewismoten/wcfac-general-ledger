@@ -25,9 +25,32 @@ function csv_headers($filename="") {
     header("Content-Disposition: attachement; filename=$filename");
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
+function buildCsvFilename(array $query, string $prefix = '', $omit = []): string
+{
+    foreach ($omit as $k) unset($query[$k]);
+    ksort($query);
+    $parts = [];
+    foreach ($query as $key => $value) {
+        $safeKey = preg_replace('/[^a-z0-9_-]/i', '', (string)$key);
+        if ($safeKey === '') continue;
+        $values = is_array($value) ? $value : [$value];
+        $clean = [];
+        foreach ($values as $v) {
+            $sv = preg_replace('/[^a-z0-9._-]/i', '', (string)$v);
+            if ($sv !== '') $clean[] = $sv;
+        }
+        if (!$clean) continue;
+        sort($clean);
+        $safeValue = implode(',', $clean);
+        $parts[] = "{$safeKey}-{$safeValue}";
+    }
+    $stamp = date('YmdHis');
+    $base  = $prefix . ($parts ? '_' . implode('_', $parts) : '') . "[{$stamp}]";
+    if (strlen($base) > 180) {
+        $hash = substr(sha1($base), 0, 10);
+        $base = substr($base, 0, 160) . "_{$hash}";
+    }
+    return $base . '.csv';
 }
 
 function is_filtered($value) {
