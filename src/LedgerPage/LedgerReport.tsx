@@ -150,7 +150,7 @@ export const LedgerReport = () => {
           <Grid size={1}>Acct No.</Grid>
           <Grid size={1}>Vend No.</Grid>
           <Grid size={9-(data.years.length*YEAR_SIZE)}>Vendor Name</Grid>
-          {data.years.map(year => <Grid key={year} size={YEAR_SIZE} textAlign="right">{year}</Grid>)}
+          {data.years.map(year => <Grid key={year} size={YEAR_SIZE} textAlign="right">FY{year}</Grid>)}
           <Departments report={data} />
           </Grid>
 }
