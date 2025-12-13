@@ -1,5 +1,5 @@
 # In Progress
-- [ ] Preserve selected tab in query string
+- [x] Preserve selected tab in local state
 
 # Under consideration
 

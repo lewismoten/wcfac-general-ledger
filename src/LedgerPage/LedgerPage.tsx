@@ -36,11 +36,19 @@ interface RawGraphData {
   }[]
 }
 
+const STORAGE_TAB = 'ledger:selectedTab';
+
 export const LedgerPage = () => {
 
   const [searchParams] = useSearchParams();
   const [errorMessage, setErrorMessage] = useState('');
-  const [selectedTab, setSelectedTab] = useState(0);
+  const [selectedTab, setSelectedTab] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_TAB);
+    if (saved === null) return 0;
+    const parsed = JSON.parse(saved);
+    if (typeof parsed === 'number') return parsed;
+    return 0;
+  });
 
   const { data, error } = useQuery<GraphData>({
     queryKey: ['chartData', searchParams.toString()],
@@ -141,6 +149,7 @@ export const LedgerPage = () => {
   const handleTabChange = useMemo(() => (_event: SyntheticEvent, newValue: number) => {
     console.log('tab changed', newValue, _event);
     setSelectedTab(newValue);
+    localStorage.setItem(STORAGE_TAB, JSON.stringify(newValue));
   }, [setSelectedTab]);
 
   return (
@@ -149,9 +158,9 @@ export const LedgerPage = () => {
       <Alert severity="warning">Not an official resource. Data has been acquired via FOIA by a private citizen and not under the control of Warren County.</Alert>
       {(errorMessage ?? '').trim() === '' ? null : <Alert severity="error">{errorMessage}</Alert>}
       <Tabs
-      value={selectedTab}
-      onChange={handleTabChange}
-      aria-label="Report Tabs"
+        value={selectedTab}
+        onChange={handleTabChange}
+        aria-label="Report Tabs"
       >
         <CustomTab index={0} label="Filters" />
         <CustomTab index={1} label="Grouping" />
@@ -164,7 +173,7 @@ export const LedgerPage = () => {
       </Tabs>
       <CustomTabPanel index={0} selectedIndex={selectedTab}>
         <ErrorBoundary>
-          <Filters/>
+          <Filters />
         </ErrorBoundary>
       </CustomTabPanel>
       <CustomTabPanel index={1} selectedIndex={selectedTab}>
@@ -186,17 +195,17 @@ export const LedgerPage = () => {
       </CustomTabPanel>
       <CustomTabPanel index={4} selectedIndex={selectedTab}>
         <ErrorBoundary>
-            <TotalChart data={totalData} series={displayedSeries} />
+          <TotalChart data={totalData} series={displayedSeries} />
         </ErrorBoundary>
       </CustomTabPanel>
       <CustomTabPanel index={5} selectedIndex={selectedTab}>
         <ErrorBoundary>
-            <LedgerReport />
+          <LedgerReport />
         </ErrorBoundary>
       </CustomTabPanel>
       <CustomTabPanel index={6} selectedIndex={selectedTab}>
         <ErrorBoundary>
-            <LedgerTable />
+          <LedgerTable />
         </ErrorBoundary>
       </CustomTabPanel>
     </>
