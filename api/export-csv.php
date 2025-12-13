@@ -49,19 +49,18 @@ if($filter != '') {
 }
 
 $sql = "SELECT
-            LEDGER.ID as `id`,
-            LPAD(LEDGER.PURCHASE_ORDER, 7, '0') as `poNo`,
-            LPAD(VENDOR.Num, 6, '0') as `vendorNo`,
-            VENDOR.Name as `vendorName`,
-            IFNULL(LEDGER.INVOICE_NO, '') as `invoiceNo`,
-            DATE_FORMAT(LEDGER.INVOICE_DATE, '%c/%d/%Y') as `invoiceDate`,
-            CONCAT(LPAD(LEDGER.ACCOUNT_FUND, 4, '0'),'-', LPAD(LEDGER.ACCOUNT_DEPT, 6, '0'),'-', LPAD(LEDGER.ACCOUNT_NO, 5, '0'),'-   -   -') as `accountNo`,
-            DATE_FORMAT(LEDGER.ACCOUNT_PAID, '%Y/%m') as `accountPaid`,
-            LEDGER.NET_AMOUNT as `netAmount`,
-            LEDGER.CHECK_NO as `checkNo`,
-            DATE_FORMAT(LEDGER.CHECK_DATE, '%c/%d/%Y') as `checkDate`,
-            LEDGER.DESCRIPTION as `description`,
-            LEDGER.BATCH as `batchNo`
+            LPAD(LEDGER.PURCHASE_ORDER, 7, '0') as `P/O NO.`,
+            LPAD(VENDOR.Num, 6, '0') as `VEND. NO.`,
+            VENDOR.Name as `VENDOR NAME`,
+            IFNULL(LEDGER.INVOICE_NO, '') as `INVOICE NO.`,
+            DATE_FORMAT(LEDGER.INVOICE_DATE, '%c/%d/%Y') as `INVOICE DATE`,
+            CONCAT(LPAD(LEDGER.ACCOUNT_FUND, 4, '0'),'-', LPAD(LEDGER.ACCOUNT_DEPT, 6, '0'),'-', LPAD(LEDGER.ACCOUNT_NO, 5, '0'),'-   -   -') as `ACCOUNT NO.`,
+            DATE_FORMAT(LEDGER.ACCOUNT_PAID, '%Y/%m') as `ACCOUNT PD`,
+            LEDGER.NET_AMOUNT as `NET AMOUNT`,
+            LEDGER.CHECK_NO as `CHECK NO.`,
+            DATE_FORMAT(LEDGER.CHECK_DATE, '%c/%d/%Y') as `CHECK DATE`,
+            LEDGER.DESCRIPTION as `DESCRIPTION`,
+            LEDGER.BATCH as `BATCH`
         FROM LEDGER
             LEFT OUTER JOIN VENDOR ON VENDOR.ID = LEDGER.VENDOR_ID
             $filter

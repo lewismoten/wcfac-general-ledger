@@ -14,6 +14,7 @@ import type { Data } from './Data';
 import { columns } from './columns';
 import type { ApiError } from './ApiError';
 import { useSearchParams } from 'react-router-dom';
+import { ExportData } from './ExportData';
 
 const VirtuosoTableComponents: TableComponents<Data> = {
   Scroller: forwardRef<HTMLDivElement>((props, ref) => (
@@ -132,7 +133,7 @@ export const LedgerTable = () => {
   );
   const itemContent = useMemo(() => rowContent(minNet, maxNet, medianNet), [minNet, maxNet, medianNet]);
   return <Paper style={{ height: 800, width: '100%' }}>
-    Entries: {total}. Download <a href={`/api/export-csv.php?${localParams}`}>CSV</a>
+    <ExportData total={total} localParams={localParams} />
     <TableVirtuoso
       data={rows ?? []}
       components={VirtuosoTableComponents}
