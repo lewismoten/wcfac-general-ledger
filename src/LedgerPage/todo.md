@@ -19,8 +19,21 @@
 - [ ] Categorize vendors in categories (Water & Sewage, Electric, Office Supplies, etc.)
 - [ ] Add metadata for vendors (web page, address, contact info, categories)
 - [ ] Save filter parameters as a named query
+- [ ] Consolidate vendors/accounts, and add ability to toggle consolidation
+
+## User Data
+- [ ] Shared info from #Data
+  - [ ] Make Public
+  - [ ] Accessible by link only
+  - [ ] Restrict to users / groups / roles
+
 
 ## Search
+- [ ] Search bar above tabs to simply search for text anywhere
+  - [ ] setup search bar to parse quick filters 
+    - [ ] vend:12345
+    - [ ] amount>10000
+    - [ ] date:2024-01...2024-06
 - [ ] Provide simple/advanced filter interface
   - [ ] Search [ string ] Range [start] and [end]
   - [ ] Display "chips" in simple interface
@@ -28,6 +41,7 @@
 - [ ] Filter Range for Invoice Date
 - [ ] Filter Range for Account Paid
 - [ ] Filter for days between Invoice/Check Date
+- [ ] Filter with "Exclude" option (ie - all fiscal years except 2026)
 
 ## Charts
 - [ ] Control line thickness, dash pattern, or mono-colors based on distinct label level
