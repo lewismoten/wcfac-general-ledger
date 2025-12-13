@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { ApiError } from './ApiError';
 import { useSearchParams } from 'react-router-dom';
@@ -8,7 +8,8 @@ import {
   PieChart,
   Pie,
   ResponsiveContainer,
-  Cell
+  Cell,
+  Sector
 } from "recharts";
 
 interface LedgerReportVendor {
@@ -41,13 +42,30 @@ type LedgerTooltipProps = {
   active?: boolean;
   payload?: { payload: PieRow }[];
 }
-const LedgerPieTooltip = ({ active, payload }: LedgerTooltipProps) => {
-  if (!active || !payload || payload.length === 0) {
-    return null;
-  }
+const StableSector = (props: any) => {
+  const {
+    cx,
+    cy,
+    innerRadius,
+    outerRadius,
+    startAngle,
+    endAngle,
+    fill,
+  } = props;
 
-  const item = payload[0].payload;
-
+  return (
+    <Sector
+      cx={cx}
+      cy={cy}
+      innerRadius={innerRadius}
+      outerRadius={outerRadius}
+      startAngle={startAngle}
+      endAngle={endAngle}
+      fill={fill}
+    />
+  );
+};
+const Tipped = ({ level, id, name, value }: PieRow) => {
   return (
     <div
       style={{
@@ -58,30 +76,32 @@ const LedgerPieTooltip = ({ active, payload }: LedgerTooltipProps) => {
       }}
     >
       <div style={{ fontWeight: "bold", marginBottom: 4 }}>
-        {item.level.toUpperCase()}
+        {level.toUpperCase()}
       </div>
 
       <div>
         <strong>No:</strong>{" "}
-        {item.id.toString().padStart(
-          item.level === "department" ? 6 :
-            item.level === "account" ? 5 : 6,
+        {id.toString().padStart(
+          level === "department" ? 6 :
+            level === "account" ? 5 : 6,
           "0"
         )}
       </div>
 
       <div>
-        <strong>Name:</strong> {item.name}
+        <strong>Name:</strong> {name}
       </div>
 
       <div style={{ marginTop: 4, textAlign: "right" }}>
-        <strong>{formatCurrency(item.value)}</strong>
+        <strong>{formatCurrency(value)}</strong>
       </div>
     </div>
   );
 }
 export const LedgerPie = () => {
   const [searchParams] = useSearchParams();
+  const [hovered, setHovered] = useState<PieRow | null>(null);
+  const LedgerPieTooltip = ({ active }: LedgerTooltipProps) => (!active || !hovered) ? null : <Tipped {...hovered} />
 
   const localParams = useMemo(() => {
     const params = new URLSearchParams(searchParams);
@@ -197,7 +217,17 @@ export const LedgerPie = () => {
   }
 
   const renderLabel = (prefix: string, pad: number) => (props: any) => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, id } = props;
+    const { cx, cy, midAngle, innerRadius, outerRadius, id, percent } = props;
+    if (percent <= 0.04) return null;
+    let fontSize = 14;
+    let fontWeight = "normal";
+    if (percent < .05) fontSize = 10;
+    else if (percent < .1) fontSize = 12;
+    else {
+      fontSize = 14;
+      fontWeight = "bold";
+    }
+
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
 
     const RADIAN = Math.PI / 180;
@@ -211,8 +241,8 @@ export const LedgerPie = () => {
         fill="#fff"
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize={12}
-        fontWeight="bold"
+        fontSize={fontSize}
+        fontWeight={fontWeight}
       >
         {prefix}: {id.toString().padStart(pad, '0')}
       </text>
@@ -237,6 +267,10 @@ export const LedgerPie = () => {
             innerRadius={maxRadius * 0.16}
             outerRadius={maxRadius * 0.44}
             label={renderLabel('Dpt', 6)}
+            onMouseEnter={entry => setHovered(entry as PieRow)}
+            onMouseLeave={() => setHovered(null)}
+            shape={StableSector}
+            isAnimationActive={false}
           >
             {deptData.map((entry, index) => (<Cell key={`dept-${entry.id}`} fill={colors[index % colors.length]} />))}
           </Pie>
@@ -248,6 +282,10 @@ export const LedgerPie = () => {
             innerRadius={maxRadius * 0.48}
             outerRadius={maxRadius * 0.72}
             label={renderLabel('Act', 5)}
+            onMouseEnter={entry => setHovered(entry as PieRow)}
+            onMouseLeave={() => setHovered(null)}
+            shape={StableSector}
+            isAnimationActive={false}
           >
             {acctData.map((entry, index) => (<Cell key={`acct-${entry.id}`} fill={colors[index % colors.length]} />))}
           </Pie>
@@ -259,6 +297,10 @@ export const LedgerPie = () => {
             innerRadius={maxRadius * 0.76}
             outerRadius={maxRadius * 1.0}
             label={renderLabel('Vnd', 6)}
+            onMouseEnter={entry => setHovered(entry as PieRow)}
+            onMouseLeave={() => setHovered(null)}
+            shape={StableSector}
+            isAnimationActive={false}
           >
             {vendData.map((entry, index) => (<Cell key={`vend-${entry.id}`} fill={colors[index % colors.length]} />))}
           </Pie>
