@@ -11,7 +11,7 @@ interface ExpectedData {
 }
 
 export const FinancialHealthSnapshot = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [errorMessage, setErrorMessage] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -39,6 +39,23 @@ export const FinancialHealthSnapshot = () => {
     if (month !== selectedMonth) setSelectedMonth(month);
 
   }, [searchParams.toString()]);
+
+  useEffect(() => {
+    if(searchParams.has('year') 
+      && searchParams.get('year') === selectedYear.toString()) {
+      return;
+    }
+    searchParams.set('year', selectedYear.toString());
+    setSearchParams(searchParams)
+  }, [selectedYear]);
+  useEffect(() => {
+    if(searchParams.has('month') 
+      && searchParams.get('month') === selectedMonth.toString()) {
+      return;
+    }
+    searchParams.set('month', selectedMonth.toString());
+    setSearchParams(searchParams)
+  }, [selectedMonth]);
 
   const { data, error } = useQuery<ExpectedData>({
     queryKey: ['financial-health-snapshot', searchParams.toString()],
