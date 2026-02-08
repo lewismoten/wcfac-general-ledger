@@ -8,6 +8,7 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import { BrowserRouter } from 'react-router-dom';
+import { AuthStatus } from './Auth/AuthStatus.tsx';
 
 const queryClient = new QueryClient()
 
@@ -16,6 +17,7 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <CssBaseline enableColorScheme />
+        <AuthStatus />
         <App />
       </QueryClientProvider>
     </BrowserRouter>
