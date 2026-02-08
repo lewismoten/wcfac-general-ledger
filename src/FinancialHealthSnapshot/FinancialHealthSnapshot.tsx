@@ -3,6 +3,8 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import type { ApiError } from '../LedgerPage/ApiError';
 import { API_ROOT } from '../utils/API_ROOT';
+import { MonthSelect } from './MonthSelect';
+import { YearSelect } from './YearSelect';
 
 interface ExpectedData {
   hello: string,
@@ -29,6 +31,14 @@ export const FinancialHealthSnapshot = () => {
     }
 
   });
+
+  const handleMonthChanged = (value: number) => {
+    console.log('new month', value);
+  }
+  const handleYearChanged = (value: number) => {
+    console.log('new year', value);
+  }
+
   // select year, month
   // show total spend [current month, prior fiscal year month]
   // show total spend [fiscal ytd, prior fiscal year YTD same month]
@@ -42,6 +52,10 @@ export const FinancialHealthSnapshot = () => {
   // Bar - [Jul 2024 vs 2025, Aug 2024 vs 2025, ... Dec 2024 vs 2025, Jan 2025 vs null, ..., Jun 2026 vs null]
 
   // Are we spending more or less than last year
-  
-  return <div>{error ? `Error: ${errorMessage}` : `Hello: ${data?.hello}`}</div>
+
+  return <div>
+    <MonthSelect value={1} onChange={handleMonthChanged} />
+    <YearSelect value={(new Date()).getFullYear()} fiscal onChange={handleYearChanged} />
+    {error ? `Error: ${errorMessage}` : `Hello: ${data?.hello}`}
+    </div>
 }
