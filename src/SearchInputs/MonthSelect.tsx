@@ -2,54 +2,45 @@ import FormControl from "@mui/material/FormControl"
 import InputLabel from "@mui/material/InputLabel"
 import MenuItem from "@mui/material/MenuItem"
 import Select from "@mui/material/Select"
-import { useEffect, useState, type ChangeEvent, type FunctionComponent } from "react"
+import { useEffect, useMemo, type ChangeEvent, type FunctionComponent } from "react"
 import { useSearchParams } from "react-router-dom"
 import { readIntParam } from "./readIntParam"
 
 type SelectChangeEvent = ChangeEvent<Omit<HTMLInputElement, "value"> & { value: number }> | (Event & { target: { value: number; name: string } });
 
 interface MonthSelectProps {
-  value?: number,
-  onChange?: (value: number) => void,
   id?: string,
   label?: string
 }
+const invalid = Number.MIN_SAFE_INTEGER;
 export const MonthSelect: FunctionComponent<MonthSelectProps> = ({
-  value = new Date().getMonth() + 1,
-  onChange = () => { },
   id = 'month',
   label = 'Month'
 }) => {
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedMonth, setSelectedMonth] = useState(value);
+
+  const selectedMonth = useMemo(() =>
+    readIntParam(searchParams, id, invalid)
+    , [searchParams.get(id)])
 
   useEffect(() => {
-    if (value === selectedMonth) return;
-    setSelectedMonth(value);
-    onChange(value);
-  }, [value]);
-
-  useEffect(() => {
-    let month = readIntParam(searchParams, id, selectedMonth);
-    if (month !== selectedMonth) setSelectedMonth(month);
-  }, [searchParams.toString()]);
-
-  useEffect(() => {
-    if (searchParams.has(id)
-      && searchParams.get(id) === selectedMonth.toString()) {
-      return;
+    if (selectedMonth < 1 ||
+      selectedMonth > 12 ||
+      selectedMonth === invalid
+    ) {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      searchParams.set(id, month.toString());
+      setSearchParams(searchParams);
     }
-    searchParams.set(id, selectedMonth.toString());
-    setSearchParams(searchParams)
   }, [selectedMonth]);
 
   const handleChangeMonth = (event: SelectChangeEvent) => {
     const newValue = event.target.value;
-    if (newValue !== selectedMonth) {
-      setSelectedMonth(newValue);
-      onChange(newValue);
-    }
+    if (newValue === selectedMonth) return;
+    searchParams.set(id, newValue.toString());
+    setSearchParams(searchParams);
   }
 
   return <FormControl fullWidth>

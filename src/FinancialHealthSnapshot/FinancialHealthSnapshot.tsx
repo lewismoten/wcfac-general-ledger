@@ -1,54 +1,39 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import type { ApiError } from '../LedgerPage/ApiError';
 import { API_ROOT } from '../utils/API_ROOT';
-import { MonthSelect } from './MonthSelect';
-import { YearSelect } from './YearSelect';
-import { readIntParam } from './readIntParam';
+import { MonthSelect } from '../SearchInputs/MonthSelect';
+import { YearSelect } from '../SearchInputs/YearSelect';
 
 interface ExpectedData {
   hello: string,
 }
 
+const subParams = (params: URLSearchParams, ...ids: string[]) => {
+  const subset: URLSearchParams = new URLSearchParams();
+  ids.forEach(id => {
+    if(params.has(id)) 
+      subset.set(id, params.get(id)??'')
+    }
+    );
+  return subset.toString();
+}
+
 export const FinancialHealthSnapshot = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [errorMessage, setErrorMessage] = useState('');
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
-
-  useEffect(() => {
-    let year = readIntParam(searchParams, 'year', selectedYear);
-    if (year !== selectedYear) setSelectedYear(year);
-
-    let month = readIntParam(searchParams, 'month', selectedMonth);
-    if (month !== selectedMonth) setSelectedMonth(month);
-
-  }, [searchParams.toString()]);
-
-  useEffect(() => {
-    if(searchParams.has('year') 
-      && searchParams.get('year') === selectedYear.toString()) {
-      return;
-    }
-    searchParams.set('year', selectedYear.toString());
-    setSearchParams(searchParams)
-  }, [selectedYear]);
-  useEffect(() => {
-    if(searchParams.has('month') 
-      && searchParams.get('month') === selectedMonth.toString()) {
-      return;
-    }
-    searchParams.set('month', selectedMonth.toString());
-    setSearchParams(searchParams)
-  }, [selectedMonth]);
+  const query = useMemo(() => subParams(searchParams, 
+    'year', 
+    'month'
+  ), [searchParams]);
 
   const { data, error } = useQuery<ExpectedData>({
-    queryKey: ['financial-health-snapshot', searchParams.toString()],
+    queryKey: ['financial-health-snapshot', query],
     placeholderData: keepPreviousData,
     queryFn: async () => {
-      const res = await fetch(`${API_ROOT}/financial-health-snapshot.php?${searchParams.toString()}`);
+      const res = await fetch(`${API_ROOT}/financial-health-snapshot.php?${query}`);
       return res.json().then((data: ExpectedData | ApiError) => {
         if ('error' in data) {
           console.error(data);
@@ -57,18 +42,9 @@ export const FinancialHealthSnapshot = () => {
         }
         setErrorMessage('');
         return data;
-      }
-      )
+      })
     }
-
   });
-
-  const handleMonthChanged = (value: number) => {
-    setSelectedMonth(value);
-  }
-  const handleYearChanged = (value: number) => {
-    setSelectedYear(value);
-  }
 
   // select year, month
   // show total spend [current month, prior fiscal year month]
@@ -85,8 +61,8 @@ export const FinancialHealthSnapshot = () => {
   // Are we spending more or less than last year
 
   return <div>
-    <MonthSelect value={selectedMonth} onChange={handleMonthChanged} />
-    <YearSelect value={selectedYear} fiscal onChange={handleYearChanged} />
+    <MonthSelect id='month' />
+    <YearSelect id='year' fiscal />
     {error ? `Error: ${errorMessage}` : `Hello: ${data?.hello}`}
   </div>
 }
