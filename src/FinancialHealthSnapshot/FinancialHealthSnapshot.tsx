@@ -5,6 +5,7 @@ import type { ApiError } from '../LedgerPage/ApiError';
 import { API_ROOT } from '../utils/API_ROOT';
 import { MonthSelect } from './MonthSelect';
 import { YearSelect } from './YearSelect';
+import { readIntParam } from './readIntParam';
 
 interface ExpectedData {
   hello: string,
@@ -16,20 +17,6 @@ export const FinancialHealthSnapshot = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
-  const readIntParam = (
-    params: URLSearchParams,
-    name: string,
-    defaultValue: number) => {
-
-    if (!params.has(name)) return defaultValue;
-    let value = params.get(name);
-    if (value === null) return defaultValue;
-    try {
-      return parseInt(value, 10);
-    } catch (e) {
-      return defaultValue;
-    }
-  }
 
   useEffect(() => {
     let year = readIntParam(searchParams, 'year', selectedYear);
