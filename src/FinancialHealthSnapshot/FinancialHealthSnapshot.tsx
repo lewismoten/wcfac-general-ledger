@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import type { ApiError } from '../LedgerPage/ApiError';
@@ -13,6 +13,33 @@ interface ExpectedData {
 export const FinancialHealthSnapshot = () => {
   const [searchParams] = useSearchParams();
   const [errorMessage, setErrorMessage] = useState('');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+
+  const readIntParam = (
+    params: URLSearchParams,
+    name: string,
+    defaultValue: number) => {
+
+    if (!params.has(name)) return defaultValue;
+    let value = params.get(name);
+    if (value === null) return defaultValue;
+    try {
+      return parseInt(value, 10);
+    } catch (e) {
+      return defaultValue;
+    }
+  }
+
+  useEffect(() => {
+    let year = readIntParam(searchParams, 'year', selectedYear);
+    if (year !== selectedYear) setSelectedYear(year);
+
+    let month = readIntParam(searchParams, 'month', selectedMonth);
+    if (month !== selectedMonth) setSelectedMonth(month);
+
+  }, [searchParams.toString()]);
+
   const { data, error } = useQuery<ExpectedData>({
     queryKey: ['financial-health-snapshot', searchParams.toString()],
     placeholderData: keepPreviousData,
@@ -33,10 +60,10 @@ export const FinancialHealthSnapshot = () => {
   });
 
   const handleMonthChanged = (value: number) => {
-    console.log('new month', value);
+    setSelectedMonth(value);
   }
   const handleYearChanged = (value: number) => {
-    console.log('new year', value);
+    setSelectedYear(value);
   }
 
   // select year, month
@@ -54,8 +81,8 @@ export const FinancialHealthSnapshot = () => {
   // Are we spending more or less than last year
 
   return <div>
-    <MonthSelect value={1} onChange={handleMonthChanged} />
-    <YearSelect value={(new Date()).getFullYear()} fiscal onChange={handleYearChanged} />
+    <MonthSelect value={selectedMonth} onChange={handleMonthChanged} />
+    <YearSelect value={selectedYear} fiscal onChange={handleYearChanged} />
     {error ? `Error: ${errorMessage}` : `Hello: ${data?.hello}`}
-    </div>
+  </div>
 }
