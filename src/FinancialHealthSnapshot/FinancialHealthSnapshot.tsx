@@ -11,7 +11,7 @@ import { MonthSelect } from "../SearchInputs/MonthSelect";
 import { YearSelect } from "../SearchInputs/YearSelect";
 import type { FinancialHealthSnapshotResponse } from "./types";
 import { Summary } from "./components/Summary";
-import { NetTrendChart } from "./components/NetTrendChart";
+import { TrendChart } from "./components/TrendChart";
 
 const MONTH_KEY = "fm";
 const YEAR_KEY = "fy";
@@ -86,7 +86,8 @@ export const FinancialHealthSnapshot = () => {
         <Alert severity="info">Updating…</Alert>
       )}
       <Summary data={data} />
-      <NetTrendChart months={data?.monthly_24.months} />
+      <TrendChart months={data?.monthly_24.months} title="General Fund Activity" />
+
     </Stack>
   );
 };
