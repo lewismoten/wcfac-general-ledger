@@ -4,64 +4,93 @@ import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import type { FunctionComponent } from "react";
 import type { FinancialHealthSnapshotResponse } from "../types";
+import { ComparisonTable } from "./ComparisonTable";
 
-// helper
-const formatMoneyFromCents = (cents: number) =>
-  new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(cents / 100);
+const formatFiscalMonthHeader = (isoDate: string, fy: number) => {
+  const d = new Date(`${isoDate}T00:00:00`);
+  const monthYear = new Intl.DateTimeFormat(undefined, {
+    month: "long",
+    year: "numeric",
+  }).format(d);
 
-const formatSignedDelta = (cents: number) => {
-  const s = formatMoneyFromCents(Math.abs(cents));
-  return cents < 0 ? `−${s}` : `+${s}`;
+  return `${monthYear} · FY${fy}`;
+};
+const formatFytdHeader = (
+  startIso: string,
+  endExclusiveIso: string,
+  fy: number
+) => {
+  const start = new Date(`${startIso}T00:00:00`);
+  const end = new Date(`${endExclusiveIso}T00:00:00`);
+  end.setMonth(end.getMonth() - 1); // inclusive month
+
+  const fmt = new Intl.DateTimeFormat(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+
+  return `${fmt.format(start)} – ${fmt.format(end)} · FY${fy} YTD`;
+};
+const formatMonthYear = (isoDate: string) => {
+  const d = new Date(`${isoDate}T00:00:00`);
+  return new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" }).format(d);
 };
 
-const formatRange = (start: string, endExclusive: string) =>
-  `${start} → ${endExclusive}`;
+const formatFytdComparedTo = (fytdStartIso: string, fytdEndExclusiveIso: string) => {
+  const start = new Date(`${fytdStartIso}T00:00:00`);
+  const end = new Date(`${fytdEndExclusiveIso}T00:00:00`);
+  end.setMonth(end.getMonth() - 1); // inclusive month
 
-const deltaColor = (cents: number) =>
-  cents < 0 ? "success.main" : "error.main";
-
+  const fmt = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
+  return `${fmt.format(start)} – ${fmt.format(end)}`;
+};
 type SummaryProps = {
   data?: FinancialHealthSnapshotResponse;
 };
 
 export const Summary: FunctionComponent<SummaryProps> = ({ data }) => {
   if (!data) return null;
+
+  const monthHeader = formatFiscalMonthHeader(
+    data.ranges.month.start,
+    data.fy
+  );
+  const fytdHeader = formatFytdHeader(
+    data.ranges.fytd.start,
+    data.ranges.fytd.end_exclusive,
+    data.fy
+  );
+
+  const monthComparedTo = formatMonthYear(data.ranges.prior_month.start);
+  const fytdComparedTo = formatFytdComparedTo(data.ranges.prior_fytd.start, data.ranges.prior_fytd.end_exclusive);
+
   return (
     <Grid container spacing={2}>
       <Grid size={{ xs: 12, md: 6 }}>
         <Card>
           <CardContent>
-            <Typography variant="h6">Current Month</Typography>
+            <Typography variant="h6">{monthHeader}</Typography>
             <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              {formatRange(data.ranges.month.start, data.ranges.month.end_exclusive)}
+              Compared to {monthComparedTo}
             </Typography>
-
-            <Row
-              label="Outflow"
-              value={formatMoneyFromCents(data.summary.current_month.outflow_cents)}
-            />
-            <Row
-              label="Offsets (credits/reversals)"
-              value={formatMoneyFromCents(data.summary.current_month.offset_cents)}
-            />
-            <Row
-              label="Net"
-              value={formatMoneyFromCents(data.summary.current_month.net_cents)}
-            />
-            <Row
-              label="YoY Outflow"
-              color={deltaColor(data.summary_delta.month_yoy.outflow_cents)}
-              value={formatSignedDelta(data.summary_delta.month_yoy.outflow_cents)}
-            />
-            <Row
-              label="YoY Offsets (credits/reversals)"
-              color={deltaColor(data.summary_delta.month_yoy.offset_cents)}
-              value={formatSignedDelta(data.summary_delta.month_yoy.offset_cents)}
-            />
-            <Row
-              label="YoY Net"
-              color={deltaColor(data.summary_delta.month_yoy.net_cents)}
-              value={formatSignedDelta(data.summary_delta.month_yoy.net_cents)}
+            <ComparisonTable
+              rows={[
+                {
+                  label: "Outflow",
+                  prior: data.summary.prior_year_month.outflow_cents,
+                  current: data.summary.current_month.outflow_cents,
+                },
+                {
+                  label: "Offsets (credits / reversals)",
+                  prior: data.summary.prior_year_month.offset_cents,
+                  current: data.summary.current_month.offset_cents,
+                },
+                {
+                  label: "Net",
+                  prior: data.summary.prior_year_month.net_cents,
+                  current: data.summary.current_month.net_cents,
+                },
+              ]}
             />
           </CardContent>
         </Card>
@@ -70,72 +99,33 @@ export const Summary: FunctionComponent<SummaryProps> = ({ data }) => {
       <Grid size={{ xs: 12, md: 6 }}>
         <Card>
           <CardContent>
-            <Typography variant="h6">Fiscal YTD</Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              {formatRange(data.ranges.fytd.start, data.ranges.fytd.end_exclusive)}
-            </Typography>
+            <Typography variant="h6">{fytdHeader}</Typography>
 
-            <Row
-              label="Outflow"
-              value={formatMoneyFromCents(data.summary.fytd.outflow_cents)}
-            />
-            <Row
-              label="Offsets (credits/reversals)"
-              value={formatMoneyFromCents(data.summary.fytd.offset_cents)}
-            />
-            <Row
-              label="Net"
-              value={formatMoneyFromCents(data.summary.fytd.net_cents)}
-            />
-            <Row
-              label="YoY Outflow"
-              value={formatSignedDelta(data.summary_delta.fytd_yoy.outflow_cents)}
-              color={deltaColor(data.summary_delta.fytd_yoy.outflow_cents)}
-            />
-            <Row
-              label="YoY Offsets (credits/reversals)"
-              value={formatSignedDelta(data.summary_delta.fytd_yoy.offset_cents)}
-              color={deltaColor(data.summary_delta.fytd_yoy.offset_cents)}
-            />
-            <Row
-              label="YoY Net"
-              value={formatSignedDelta(data.summary_delta.fytd_yoy.net_cents)}
-              color={deltaColor(data.summary_delta.fytd_yoy.net_cents)}
+            <Typography variant="body2" sx={{ opacity: 0.8 }}>
+              Compared to FYTD through {fytdComparedTo}
+            </Typography>
+            <ComparisonTable
+              rows={[
+                {
+                  label: "Outflow",
+                  prior: data.summary.prior_fytd.outflow_cents,
+                  current: data.summary.fytd.outflow_cents,
+                },
+                {
+                  label: "Offsets (credits / reversals)",
+                  prior: data.summary.prior_fytd.offset_cents,
+                  current: data.summary.fytd.offset_cents,
+                },
+                {
+                  label: "Net",
+                  prior: data.summary.prior_fytd.net_cents,
+                  current: data.summary.fytd.net_cents,
+                },
+              ]}
             />
           </CardContent>
         </Card>
       </Grid>
     </Grid>
-  )
-
-}
-const Row = ({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color?: string;
-}) => (
-  <Grid container>
-    <Grid size={8}>
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-    </Grid>
-    <Grid size={4}>
-      <Typography
-        variant="body2"
-        sx={{
-          textAlign: "right",
-          fontVariantNumeric: "tabular-nums",
-          fontFeatureSettings: '"tnum"',
-          color,
-        }}
-      >
-        {value}
-      </Typography>
-    </Grid>
-  </Grid>
-);
+  );
+};
