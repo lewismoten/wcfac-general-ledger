@@ -104,6 +104,8 @@ while ($row = $result->fetch_assoc()) {
   $priorNet   = (int)$row['prior_net_cents'];
   $currentOut = (int)$row['current_outflow_cents'];
   $priorOut   = (int)$row['prior_outflow_cents'];
+  $currentOffset = $currentOut - $currentNet;
+  $priorOffset   = $priorOut - $priorNet;
 
   $rows[] = [
     'dept_id' => (int)$row['ID'],
@@ -114,6 +116,8 @@ while ($row = $result->fetch_assoc()) {
     'prior_outflow_cents' => $priorOut,
     'delta_net_cents' => $currentNet - $priorNet,
     'delta_outflow_cents' => $currentOut - $priorOut,
+    'current_offset_cents' => $currentOffset,
+    'prior_offset_cents' => $priorOffset
   ];
 
 }
@@ -177,7 +181,7 @@ $summaryStmt->bind_param(
   $priorMonthStart, $priorMonthEnd, // prior month: outflow
   $priorFyStart, $priorMonthEnd, // prior fytd: net
   $priorFyStart, $priorMonthEnd, // prior fytd: outflow
-  // where
+  // where: cover everything any CASE needs (prior fy start -> current month end)
   $priorFyStart, $end // prior year to current year end
 );
 $summaryStmt->execute();
@@ -202,14 +206,21 @@ $summaryOut = [
     'outflow_cents' => (int)$summary['prior_fytd_outflow_cents'],
   ],
 ];
+foreach (['current_month','fytd','prior_year_month','prior_fytd'] as $k) {
+  $summaryOut[$k]['offset_cents'] =
+    $summaryOut[$k]['outflow_cents'] - $summaryOut[$k]['net_cents'];
+}
+
 $summaryDelta = [
   'month_yoy' => [
     'net_cents' => $summaryOut['current_month']['net_cents'] - $summaryOut['prior_year_month']['net_cents'],
     'outflow_cents' => $summaryOut['current_month']['outflow_cents'] - $summaryOut['prior_year_month']['outflow_cents'],
+    'offset_cents' => $summaryOut['current_month']['offset_cents'] - $summaryOut['prior_year_month']['offset_cents'],
   ],
   'fytd_yoy' => [
     'net_cents' => $summaryOut['fytd']['net_cents'] - $summaryOut['prior_fytd']['net_cents'],
     'outflow_cents' => $summaryOut['fytd']['outflow_cents'] - $summaryOut['prior_fytd']['outflow_cents'],
+    'offset_cents' => $summaryOut['fytd']['offset_cents'] - $summaryOut['prior_fytd']['offset_cents'],
   ],
 ];
 
@@ -258,6 +269,7 @@ while ($cursor < $endDt) {
     'ym' => $ym,
     'net_cents' => $vals['net_cents'],
     'outflow_cents' => $vals['outflow_cents'],
+    'offset_cents' => $vals['outflow_cents'] - $vals['net_cents'],
   ];
 
   $cursor = $cursor->modify('first day of next month');
@@ -275,6 +287,7 @@ echo json_encode([
   'semantics' => [
     'net_cents' => 'Sum of NET_AMOUNT including negatives (credits/reversals).',
     'outflow_cents' => 'Sum of positive NET_AMOUNT only (spend/outflows).',
+    'offset_cents' => 'Outflow minus net (credits/reversals/offsets).',
   ],
   'summary' => $summaryOut,
   'summary_delta' => $summaryDelta,

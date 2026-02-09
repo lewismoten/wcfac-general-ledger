@@ -9,11 +9,13 @@ interface DateRange {
 interface SnapshotSemantics {
   net_cents: string;
   outflow_cents: string;
+  offset_cents: string;
 }
 
 interface NetOutflow {
   net_cents: number;        // signed cents
   outflow_cents: number;    // >= 0
+  offset_cents: number;     // <= 0
 }
 
 interface SummaryBlock {
@@ -35,10 +37,13 @@ interface DepartmentRow {
   current_net_cents: number;
   prior_net_cents: number;
   current_outflow_cents: number;
+  current_offset_cents: number;
   prior_outflow_cents: number;
+  prior_offset_cents: number;
 
   delta_net_cents: number;
   delta_outflow_cents: number;
+  delta_offset_cents: number;
 }
 
 interface MonthlyPoint {
@@ -47,6 +52,7 @@ interface MonthlyPoint {
   ym: YearMonth; // calendar year-month for debugging / keys
   net_cents: number;
   outflow_cents: number;
+  offset_cents: number;
 }
 
 interface Monthly24Block {

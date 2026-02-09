@@ -10,6 +10,7 @@ import { API_ROOT } from "../utils/API_ROOT";
 import { MonthSelect } from "../SearchInputs/MonthSelect";
 import { YearSelect } from "../SearchInputs/YearSelect";
 import type { FinancialHealthSnapshotResponse } from "./types";
+import { Summary } from "./components/Summary";
 
 const MONTH_KEY = "fm";
 const YEAR_KEY = "fy";
@@ -80,25 +81,10 @@ export const FinancialHealthSnapshot = () => {
           <div>Loading snapshot…</div>
         </Stack>
       )}
-
-      {data && (
-        <div>
-          {/* No rendering yet: just prove type-safe access */}
-          <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-            {JSON.stringify(
-              {
-                fy: data.fy,
-                fm: data.fm,
-                monthRange: data.ranges.month,
-                currentMonthOutflow: data.summary.current_month.outflow_cents,
-                fetching: isFetching,
-              },
-              null,
-              2
-            )}
-          </pre>
-        </div>
+      {isFetching && !isLoading && (
+        <Alert severity="info">Updating…</Alert>
       )}
+      <Summary data={data} />
     </Stack>
   );
 };
