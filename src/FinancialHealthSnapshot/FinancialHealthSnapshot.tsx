@@ -1,128 +1,104 @@
-import { useMemo, useState } from 'react'
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
-import type { ApiError } from '../LedgerPage/ApiError';
-import { API_ROOT } from '../utils/API_ROOT';
-import { MonthSelect } from '../SearchInputs/MonthSelect';
-import { YearSelect } from '../SearchInputs/YearSelect';
+import { useMemo } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
+import Alert from "@mui/material/Alert";
+import Stack from "@mui/material/Stack";
+import CircularProgress from "@mui/material/CircularProgress";
 
-interface ExpectedData {
-  hello: string,
-}
+import type { ApiError } from "../LedgerPage/ApiError";
+import { API_ROOT } from "../utils/API_ROOT";
+import { MonthSelect } from "../SearchInputs/MonthSelect";
+import { YearSelect } from "../SearchInputs/YearSelect";
+import type { FinancialHealthSnapshotResponse } from "./types";
 
-const MONTH_KEY = 'fm';
-const YEAR_KEY = 'fy';
+const MONTH_KEY = "fm";
+const YEAR_KEY = "fy";
 const KEYS = [YEAR_KEY, MONTH_KEY];
 
 const subParams = (params: URLSearchParams, ...ids: string[]) => {
-  const subset: URLSearchParams = new URLSearchParams();
-  ids.forEach(id => {
-    if(params.has(id)) 
-      subset.set(id, params.get(id)??'')
-    }
-    );
+  const subset = new URLSearchParams();
+  ids.forEach((id) => {
+    const v = params.get(id);
+    if (v != null && v !== "") subset.set(id, v);
+  });
   return subset.toString();
+};
+
+const isApiError = (x: unknown): x is ApiError =>
+  typeof x === "object" && x !== null && "error" in x;
+
+async function fetchSnapshot(query: string): Promise<FinancialHealthSnapshotResponse> {
+  const res = await fetch(`${API_ROOT}/financial-health-snapshot.php?${query}`);
+
+  // If your API always returns JSON, this is fine.
+  // If it might return HTML on fatal error, wrap in try/catch.
+  const json = (await res.json()) as unknown;
+
+  if (isApiError(json)) {
+    throw new Error(json.error);
+  }
+
+  return json as FinancialHealthSnapshotResponse;
 }
 
 export const FinancialHealthSnapshot = () => {
   const [searchParams] = useSearchParams();
-  const [errorMessage, setErrorMessage] = useState('');
 
-  const query = useMemo(() => subParams(searchParams, ...KEYS), [searchParams]);
+  const query = useMemo(
+    () => subParams(searchParams, ...KEYS),
+    [searchParams.toString()]
+  );
 
-  const { data, error } = useQuery<ExpectedData>({
-    queryKey: ['financial-health-snapshot', query],
+  const {
+    data,
+    error,
+    isError,
+    isLoading,
+    isFetching,
+  } = useQuery<FinancialHealthSnapshotResponse, Error>({
+    queryKey: ["financial-health-snapshot", query],
     placeholderData: keepPreviousData,
-    queryFn: async () => {
-      const res = await fetch(`${API_ROOT}/financial-health-snapshot.php?${query}`);
-      return res.json().then((data: ExpectedData | ApiError) => {
-        if ('error' in data) {
-          console.error(data);
-          setErrorMessage(data.error);
-          throw data.details;
-        }
-        setErrorMessage('');
-        return data;
-      })
-    }
+    queryFn: () => fetchSnapshot(query),
   });
 
-  // select year, month
-  // show total spend [current month, prior fiscal year month]
-  // show total spend [fiscal ytd, prior fiscal year YTD same month]
+  return (
+    <Stack spacing={2}>
+      <Stack direction="row" spacing={2}>
+        <MonthSelect id={MONTH_KEY} fiscal />
+        <YearSelect id={YEAR_KEY} fiscal />
+      </Stack>
 
-  // ie: selected December 2025
-  // Total Spend [SUM(December 2025), SUM(July 2025 to December 2025)]
-  // Prior Spend [SUM(December 2024), SUM(July 2024 to December 2024)]
+      {isError && (
+        <Alert severity="error">
+          {error.message}
+        </Alert>
+      )}
 
-  // Charts
-  // Line - [SUM(January 2023), SUM(February 2023), ..., SUM(December 2025)]
-  // Bar - [Jul 2024 vs 2025, Aug 2024 vs 2025, ... Dec 2024 vs 2025, Jan 2025 vs null, ..., Jun 2026 vs null]
+      {isLoading && (
+        <Stack direction="row" spacing={1} alignItems="center">
+          <CircularProgress size={18} />
+          <div>Loading snapshot…</div>
+        </Stack>
+      )}
 
-  /* DATA {
-    totalSpend: {
-      month: {
-        fiscalMonth: 6,
-        value: 9223.12
-      },
-      fiscalYear: {
-        fiscalYear: 2025,
-        value: 42119.12
-      }
-    },
-    priorTotalSpend: {
-      month: {
-        fiscalMonth: 6,
-        value: 9323.12
-      },
-      fiscalYear: {
-        fiscalYear: 2024,
-        value: 40119.12
-      }
-    },
-    monthlyTotalSpend: [
-      {
-        fiscalMonth: 1,
-        fiscalYear: 2024,
-        value: 4111
-      },
-      ...
-      {
-        fiscalMonth: 6,
-        fiscalYear: 2025,
-        value: 4111
-      }
-    ],
-    currentPriorSpend: [
-      {
-        fiscalMonth: 1,
-        values: [
-          {
-            fiscalYear: 2024,
-            value: 1243
-          }, 
-          {
-            fiscalYear: 2025,
-            value: 49101
-          }
-        ]
-      },
-    ]
-    
-    [
-      ['FY2025', 9923.12],
-      ['FY2024', '1881.12]
-    ],
-    months: [
-    ]
-  }
-  */
-
-  // Are we spending more or less than last year
-
-  return <div>
-    <MonthSelect id={MONTH_KEY} fiscal />
-    <YearSelect id={YEAR_KEY} fiscal />
-    {error ? `Error: ${errorMessage}` : `Hello: ${data?.hello}`}
-  </div>
-}
+      {data && (
+        <div>
+          {/* No rendering yet: just prove type-safe access */}
+          <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>
+            {JSON.stringify(
+              {
+                fy: data.fy,
+                fm: data.fm,
+                monthRange: data.ranges.month,
+                currentMonthOutflow: data.summary.current_month.outflow_cents,
+                fetching: isFetching,
+              },
+              null,
+              2
+            )}
+          </pre>
+        </div>
+      )}
+    </Stack>
+  );
+};

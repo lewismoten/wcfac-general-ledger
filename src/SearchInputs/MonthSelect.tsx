@@ -1,78 +1,61 @@
-import FormControl from "@mui/material/FormControl"
-import InputLabel from "@mui/material/InputLabel"
-import MenuItem from "@mui/material/MenuItem"
-import Select from "@mui/material/Select"
-import { useEffect, useMemo, type ChangeEvent, type FunctionComponent } from "react"
-import { useSearchParams } from "react-router-dom"
-import { readIntParam } from "./readIntParam"
-
-type SelectChangeEvent = ChangeEvent<Omit<HTMLInputElement, "value"> & { value: number }> | (Event & { target: { value: number; name: string } });
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import { useMemo, type FunctionComponent, type ReactElement } from "react";
+import { useSearchParamInt } from "../utils/useSearchParamInt";
+import { calendarMonthFromFiscal, currentFiscalMonth } from "../utils/fiscal";
 
 interface MonthSelectProps {
-  fiscal?: boolean,
-  id?: string,
-  label?: string
+  fiscal?: boolean;
+  id?: string;
+  label?: string;
 }
-const invalid = Number.MIN_SAFE_INTEGER;
+
+const monthName = (calendarMonth: number, locale?: string) => {
+  const fmt = new Intl.DateTimeFormat(locale ?? navigator.language, { month: "long" });
+  return fmt.format(new Date(2000, calendarMonth - 1, 1));
+};
+
 export const MonthSelect: FunctionComponent<MonthSelectProps> = ({
   fiscal = false,
-  id = 'month',
-  label = 'Month'
+  id = "month",
+  label = "Month",
 }) => {
+  const now = useMemo(() => new Date(), []);
+  const defaultValue = fiscal ? currentFiscalMonth(now) : now.getMonth() + 1;
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [month, setMonth] = useSearchParamInt(id, {
+    defaultValue,
+    min: 1,
+    max: 12,
+  });
 
-  const selectedMonth = useMemo(() =>
-    readIntParam(searchParams, id, invalid)
-    , [searchParams.get(id)])
-
-  const monthItems = useMemo(() => {
-    const firstMonth = fiscal ? 7 : 1;
-    const values = [];
-
-    const l18n = new Intl.DateTimeFormat(navigator.language, {month: 'long'});
-
-    const monthName = (index:number):string => {
-      const month = (firstMonth + index) % 12;
-      const date = new Date(2000, month - 1, 1);
-      return l18n.format(date);
+  const items = useMemo<ReactElement[]>(() => {
+    const out: ReactElement[] = [];
+    for (let v = 1; v <= 12; v++) {
+      const cal = fiscal ? calendarMonthFromFiscal(v) : v;
+      out.push(
+        <MenuItem key={v} value={v}>
+          {monthName(cal)}
+        </MenuItem>
+      );
     }
-
-    for(let i = 0; i < 11; i++) {
-      values.push(<MenuItem key={i} value={i}>{monthName(i)}</MenuItem>)
-    }
-    return values;
+    return out;
   }, [fiscal]);
 
-  useEffect(() => {
-    if (selectedMonth < 1 ||
-      selectedMonth > 12 ||
-      selectedMonth === invalid
-    ) {
-      const now = new Date();
-      const month = now.getMonth() + 1;
-      searchParams.set(id, month.toString());
-      setSearchParams(searchParams);
-    }
-  }, [selectedMonth]);
-
-  const handleChangeMonth = (event: SelectChangeEvent) => {
-    const newValue = event.target.value;
-    if (newValue === selectedMonth) return;
-    searchParams.set(id, newValue.toString());
-    setSearchParams(searchParams);
-  }
-
-  return <FormControl fullWidth>
-    <InputLabel id={`selected-${id}-label`}>{label}</InputLabel>
-    <Select
-      labelId={`selected-${id}-label`}
-      id={`selected-${id}`}
-      value={selectedMonth}
-      label={label}
-      onChange={handleChangeMonth}
-    >
-      {monthItems}
-    </Select>
-  </FormControl>
-}
+  return (
+    <FormControl fullWidth>
+      <InputLabel id={`selected-${id}-label`}>{label}</InputLabel>
+      <Select
+        labelId={`selected-${id}-label`}
+        id={`selected-${id}`}
+        value={month}
+        label={label}
+        onChange={(e) => setMonth(Number((e.target as any).value))}
+      >
+        {items}
+      </Select>
+    </FormControl>
+  );
+};
