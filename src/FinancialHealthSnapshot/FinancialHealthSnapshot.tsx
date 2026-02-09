@@ -13,6 +13,7 @@ import type { FinancialHealthSnapshotResponse } from "./types";
 import { Summary } from "./components/Summary";
 import { TrendChart } from "./components/TrendChart";
 import { DepartmentComparisonTable } from "./components/DepartmentComparisonTable";
+import { FyCompareBarChart } from "./components/FyCompareBarChart";
 
 const MONTH_KEY = "fm";
 const YEAR_KEY = "fy";
@@ -88,8 +89,8 @@ export const FinancialHealthSnapshot = () => {
       )}
       <Summary data={data} />
       <TrendChart months={data?.monthly_24.months} title="General Fund Activity" />
+      <FyCompareBarChart months={data?.monthly_24.months} fy={data?.fy} fm={data?.fm} />
       <DepartmentComparisonTable rows={data?.by_department} maxRows={25} />
-
     </Stack>
   );
 };
