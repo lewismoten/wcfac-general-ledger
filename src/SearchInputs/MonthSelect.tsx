@@ -9,11 +9,13 @@ import { readIntParam } from "./readIntParam"
 type SelectChangeEvent = ChangeEvent<Omit<HTMLInputElement, "value"> & { value: number }> | (Event & { target: { value: number; name: string } });
 
 interface MonthSelectProps {
+  fiscal?: boolean,
   id?: string,
   label?: string
 }
 const invalid = Number.MIN_SAFE_INTEGER;
 export const MonthSelect: FunctionComponent<MonthSelectProps> = ({
+  fiscal = false,
   id = 'month',
   label = 'Month'
 }) => {
@@ -23,6 +25,24 @@ export const MonthSelect: FunctionComponent<MonthSelectProps> = ({
   const selectedMonth = useMemo(() =>
     readIntParam(searchParams, id, invalid)
     , [searchParams.get(id)])
+
+  const monthItems = useMemo(() => {
+    const firstMonth = fiscal ? 7 : 1;
+    const values = [];
+
+    const l18n = new Intl.DateTimeFormat(navigator.language, {month: 'long'});
+
+    const monthName = (index:number):string => {
+      const month = (firstMonth + index) % 12;
+      const date = new Date(2000, month - 1, 1);
+      return l18n.format(date);
+    }
+
+    for(let i = 0; i < 11; i++) {
+      values.push(<MenuItem key={i} value={i}>{monthName(i)}</MenuItem>)
+    }
+    return values;
+  }, [fiscal]);
 
   useEffect(() => {
     if (selectedMonth < 1 ||
@@ -52,18 +72,7 @@ export const MonthSelect: FunctionComponent<MonthSelectProps> = ({
       label={label}
       onChange={handleChangeMonth}
     >
-      <MenuItem value={7}>July</MenuItem>
-      <MenuItem value={8}>August</MenuItem>
-      <MenuItem value={9}>September</MenuItem>
-      <MenuItem value={10}>October</MenuItem>
-      <MenuItem value={11}>November</MenuItem>
-      <MenuItem value={12}>December</MenuItem>
-      <MenuItem value={1}>January</MenuItem>
-      <MenuItem value={2}>February</MenuItem>
-      <MenuItem value={3}>March</MenuItem>
-      <MenuItem value={4}>April</MenuItem>
-      <MenuItem value={5}>May</MenuItem>
-      <MenuItem value={6}>June</MenuItem>
+      {monthItems}
     </Select>
   </FormControl>
 }

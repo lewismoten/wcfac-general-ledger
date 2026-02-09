@@ -10,6 +10,10 @@ interface ExpectedData {
   hello: string,
 }
 
+const MONTH_KEY = 'fm';
+const YEAR_KEY = 'fy';
+const KEYS = [YEAR_KEY, MONTH_KEY];
+
 const subParams = (params: URLSearchParams, ...ids: string[]) => {
   const subset: URLSearchParams = new URLSearchParams();
   ids.forEach(id => {
@@ -24,10 +28,7 @@ export const FinancialHealthSnapshot = () => {
   const [searchParams] = useSearchParams();
   const [errorMessage, setErrorMessage] = useState('');
 
-  const query = useMemo(() => subParams(searchParams, 
-    'year', 
-    'month'
-  ), [searchParams]);
+  const query = useMemo(() => subParams(searchParams, ...KEYS), [searchParams]);
 
   const { data, error } = useQuery<ExpectedData>({
     queryKey: ['financial-health-snapshot', query],
@@ -58,11 +59,70 @@ export const FinancialHealthSnapshot = () => {
   // Line - [SUM(January 2023), SUM(February 2023), ..., SUM(December 2025)]
   // Bar - [Jul 2024 vs 2025, Aug 2024 vs 2025, ... Dec 2024 vs 2025, Jan 2025 vs null, ..., Jun 2026 vs null]
 
+  /* DATA {
+    totalSpend: {
+      month: {
+        fiscalMonth: 6,
+        value: 9223.12
+      },
+      fiscalYear: {
+        fiscalYear: 2025,
+        value: 42119.12
+      }
+    },
+    priorTotalSpend: {
+      month: {
+        fiscalMonth: 6,
+        value: 9323.12
+      },
+      fiscalYear: {
+        fiscalYear: 2024,
+        value: 40119.12
+      }
+    },
+    monthlyTotalSpend: [
+      {
+        fiscalMonth: 1,
+        fiscalYear: 2024,
+        value: 4111
+      },
+      ...
+      {
+        fiscalMonth: 6,
+        fiscalYear: 2025,
+        value: 4111
+      }
+    ],
+    currentPriorSpend: [
+      {
+        fiscalMonth: 1,
+        values: [
+          {
+            fiscalYear: 2024,
+            value: 1243
+          }, 
+          {
+            fiscalYear: 2025,
+            value: 49101
+          }
+        ]
+      },
+    ]
+    
+    [
+      ['FY2025', 9923.12],
+      ['FY2024', '1881.12]
+    ],
+    months: [
+    ]
+  }
+  */
+
   // Are we spending more or less than last year
 
   return <div>
-    <MonthSelect id='month' />
-    <YearSelect id='year' fiscal />
+    <MonthSelect id={MONTH_KEY} fiscal />
+    <YearSelect id={YEAR_KEY} fiscal />
     {error ? `Error: ${errorMessage}` : `Hello: ${data?.hello}`}
   </div>
 }

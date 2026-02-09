@@ -1,0 +1,32 @@
+<?php
+declare(strict_types=1);
+if (!defined('APP_BOOTSTRAPPED')) {
+    throw new RuntimeException('Do not load fiscal utils directly; use bootstrap.php');
+}
+
+function common_headers(): void {
+    header("Cache-Control: no-cache, no-store, must-revalidate");
+    header("Pragma: no-cache");
+    header("Expires: 0");
+}
+
+function json_headers(): void {
+    common_headers();
+    header("Content-Type: application/json; charset=UTF-8");
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Methods: GET, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type");
+
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
+}
+
+function csv_headers(string $filename = ''): void {
+    common_headers();
+    header("Content-Type: text/csv; charset=UTF-8");
+    if ($filename !== '') {
+        header("Content-Disposition: attachment; filename=\"{$filename}\"");
+    }
+}
