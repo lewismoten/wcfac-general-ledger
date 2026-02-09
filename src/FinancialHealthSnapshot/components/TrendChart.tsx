@@ -56,7 +56,7 @@ const metricLabel = (k: MetricKey) => {
   }
 };
 const niceCeiling = (value: number): number => {
-  if (value <= 0) return 0;
+  if (value <= 0 || !Number.isFinite(value)) return 0;
   const magnitude = Math.pow(10, Math.floor(Math.log10(value)));
   const leading = Math.ceil(value / magnitude);
   return leading * magnitude;
