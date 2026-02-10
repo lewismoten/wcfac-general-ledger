@@ -24,3 +24,11 @@ export type DeptFunctionSummaryResponse = {
   by_department: DeptOutflowRow[];
   top10_by_fytd: DeptOutflowRow[];
 };
+export type ViewMode = "top10" | "all";
+
+
+export type Flags = {
+  smallBase?: boolean;
+  newNoPrior?: boolean;
+  noSpendYet?: boolean;
+};

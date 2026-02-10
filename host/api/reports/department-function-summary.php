@@ -50,7 +50,7 @@ while ($r = $res->fetch_assoc()) {
 
   $rows[] = [
     'dept_id' => (int)$r['dept_id'],
-    'dept' => $r['dept'],
+    'dept' => trim($r['dept'], '* '),
     'current_month_outflow_cents' => $current,
     'fytd_outflow_cents' => $fytd,
     'prior_fytd_outflow_cents' => $prior,
