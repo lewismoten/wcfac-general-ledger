@@ -2,6 +2,7 @@ import { LedgerPage } from "./LedgerPage/LedgerPage";
 import { FinancialHealthSnapshot } from './FinancialHealthSnapshot/FinancialHealthSnapshot';
 import { AppBar, Toolbar, Tabs, Tab, Box, Typography } from '@mui/material';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { DepartmentFunctionSummary } from "./DepartmentFunctionSummary/DepartmentFunctionSummary";
 
 export default function App() {
   const location = useLocation();
@@ -25,6 +26,11 @@ export default function App() {
               component={Link}
               to="/financial-health-snapshot"
             />
+            <Tab
+              label="Departments"
+              component={Link}
+              to="/department-function-summary"
+            />
           </Tabs>
         </Toolbar>
       </AppBar>
@@ -34,6 +40,7 @@ export default function App() {
           <Route path="/" element={<LedgerPage />} />
           <Route path="/ledger" element={<LedgerPage />} />
           <Route path="/financial-health-snapshot" element={<FinancialHealthSnapshot />} />
+          <Route path="/department-function-summary" element={<DepartmentFunctionSummary />} />
         </Routes>
       </Box>
     </Box>
