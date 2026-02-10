@@ -14,6 +14,7 @@ import { Summary } from "./components/Summary";
 import { TrendChart } from "./components/TrendChart";
 import { DepartmentComparisonTable } from "./components/DepartmentComparisonTable";
 import { FyCompareBarChart } from "./components/FyCompareBarChart";
+import { ExecutiveSummary } from "./components/ExecutiveSummary";
 
 const MONTH_KEY = "fm";
 const YEAR_KEY = "fy";
@@ -87,6 +88,7 @@ export const FinancialHealthSnapshot = () => {
       {isFetching && !isLoading && (
         <Alert severity="info">Updating…</Alert>
       )}
+      <ExecutiveSummary data={data} />
       <Summary data={data} />
       <TrendChart months={data?.monthly_24.months} title="General Fund Activity" />
       <FyCompareBarChart months={data?.monthly_24.months} fy={data?.fy} fm={data?.fm} />

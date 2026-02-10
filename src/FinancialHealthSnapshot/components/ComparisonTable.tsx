@@ -5,6 +5,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import type { ReactElement } from "react";
+import { formatPercentDeltaReadable } from "./formatPercentDeltaReadable";
 
 const NA = '—';
 const NA_ARIA = 'Not applicable';
@@ -16,7 +17,7 @@ const ariaMoney = (cents: number) => formatMoneyFromCents(cents);
 
 
 const ariaPercent = (current: number, prior: number): string => {
-  const p = formatPercentDelta(current, prior);
+  const p = formatPercentDeltaReadable(current, prior);
   return p === NA ? NA_ARIA : p;
 };
 
@@ -26,10 +27,10 @@ const formatSignedDelta = (cents: number) => {
   return cents < 0 ? `−${s}` : `+${s}`;
 };
 
-const formatPercentDelta = (current: number, prior: number): string => {
-  if (prior === 0) return current === 0 ? "0.0%" : NA;
-  return `${(((current - prior) / prior) * 100).toFixed(1)}%`;
-};
+// const formatPercentDelta = (current: number, prior: number): string => {
+//   if (prior === 0) return current === 0 ? "0.0%" : NA;
+//   return `${(((current - prior) / prior) * 100).toFixed(1)}%`;
+// };
 
 const deltaColor = (cents: number) => {
   if(cents === 0) return;
@@ -62,7 +63,7 @@ export const ComparisonTable = ({ rows }: ComparisonTableProps): ReactElement =>
       <TableBody>
         {rows.map(r => {
           const delta = r.current - r.prior;
-          const pct = formatPercentDelta(r.current, r.prior);
+          const pct = formatPercentDeltaReadable(r.current, r.prior);
           const pctColor = pct === NA ? 'text.secondary' : deltaColor(delta);
           return (
             <TableRow key={r.label}>

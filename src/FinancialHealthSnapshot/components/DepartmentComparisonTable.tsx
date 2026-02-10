@@ -9,6 +9,7 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
+import { formatPercentDeltaReadable } from "./formatPercentDeltaReadable";
 
 type MetricKey = "net" | "outflow" | "offset";
 
@@ -60,15 +61,9 @@ const formatSignedDelta = (cents: number) => {
   return cents < 0 ? `−${s}` : `+${s}`;
 };
 
-const formatPercentDelta = (current: number, prior: number): string => {
-  if(prior === 0 && current === 0) return NA;
-  if (prior === 0) return current === 0 ? "0.0%" : NA;
-  return `${(((current - prior) / prior) * 100).toFixed(1)}%`;
-};
-
 const ariaMoney = (cents: number) => (cents === 0 ? NA_ARIA : formatMoneyFromCents(cents));
 const ariaPercent = (current: number, prior: number) => {
-  const p = formatPercentDelta(current, prior);
+  const p = formatPercentDeltaReadable(current, prior);
   return p === NA ? NA_ARIA : p;
 };
 
@@ -262,7 +257,7 @@ export const DepartmentComparisonTable = ({
                   sx={{ fontVariantNumeric: "tabular-nums", color: deltaColor(delta) }}
                   aria-label={ariaPercent(current, prior)}
                 >
-                  {formatPercentDelta(current, prior)}
+                  {formatPercentDeltaReadable(current, prior)}
                 </TableCell>
               </TableRow>
             );
