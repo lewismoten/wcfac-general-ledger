@@ -1,28 +1,8 @@
 <?php
-/*
-Fields:
-NET AMOUNT
-CHECK DATE
-ACCOUNT NO. (mapped to department/function)
-
-Show:
-Total Spend – Current Month
-Total Spend – Fiscal YTD
-Prior Year Same Month (YoY comparison)
-Fiscal YTD vs Prior Fiscal YTD
-
-Charts:
-
-Line: Monthly total spend (last 12–24 months)
-Bar: Current FY vs prior FY (same months)
-
-Purpose:
-Are we spending more or less than last year?
-*/
-
-require_once __DIR__ . '/utils/bootstrap.php';
+require_once __DIR__ . '/../utils/bootstrap.php';
 
 json_headers();
+$sql_folder = "financial_health_snapshot";
 
 $fiscalYear  = fiscal_year_from_query('fy');
 $fiscalMonth = fiscal_month_from_query('fm');
@@ -41,49 +21,10 @@ $seriesStart = $seriesStartDt->format('Y-m-d');
 $priorMonthStart = fiscal_year_month_to_bom($priorFy, $fiscalMonth);
 $priorMonthEnd   = fiscal_year_month_to_next_bom($priorFy, $fiscalMonth);
 
-$config = require __DIR__ . "/config.php";
+$config = require __DIR__ . "/../config.php";
 $conn = db_connect($config["db"]);
 
-$sql = "SELECT 
-    COA_DEPT.ID, 
-    COA_DEPT.Name, 
-    CAST(SUM(CASE 
-      WHEN LEDGER.CHECK_DATE >= ? 
-      AND LEDGER.CHECK_DATE < ? 
-      THEN LEDGER.NET_AMOUNT 
-      ELSE 0 END) * 100 AS SIGNED
-    ) AS current_net_cents,
-    CAST(SUM(CASE 
-      WHEN LEDGER.CHECK_DATE >= ? 
-      AND LEDGER.CHECK_DATE < ? 
-      AND LEDGER.NET_AMOUNT > 0 
-      THEN LEDGER.NET_AMOUNT 
-      ELSE 0 END) * 100 AS SIGNED
-    ) AS current_outflow_cents,
-    CAST(SUM(CASE 
-      WHEN LEDGER.CHECK_DATE >= ? 
-      AND LEDGER.CHECK_DATE < ?
-      THEN LEDGER.NET_AMOUNT 
-      ELSE 0 END) * 100 AS SIGNED
-      ) AS prior_net_cents,
-    CAST(SUM(CASE 
-      WHEN LEDGER.CHECK_DATE >= ? 
-      AND LEDGER.CHECK_DATE < ?
-      AND LEDGER.NET_AMOUNT > 0 
-      THEN LEDGER.NET_AMOUNT 
-      ELSE 0 END) * 100 AS SIGNED
-      ) AS prior_outflow_cents
-  FROM LEDGER
-  INNER JOIN COA_DEPT ON LEDGER.ACCOUNT_DEPT = COA_DEPT.ID
-  WHERE LEDGER.ACCOUNT_RE = 4
-    AND (
-      (LEDGER.CHECK_DATE >= ? AND LEDGER.CHECK_DATE < ?)
-      OR
-      (LEDGER.CHECK_DATE >= ? AND LEDGER.CHECK_DATE < ?)
-    )
-  GROUP BY COA_DEPT.ID, COA_DEPT.Name
-  ORDER BY current_outflow_cents DESC
-  ";
+$sql = sql($sql_folder, "by_department_month_vs_prior");
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param(
@@ -124,52 +65,7 @@ while ($row = $result->fetch_assoc()) {
 $result->free();
 $stmt->close();
 
-$summarySql = "SELECT
-  CAST(SUM(CASE
-    WHEN CHECK_DATE >= ? 
-      AND CHECK_DATE < ? 
-    THEN NET_AMOUNT ELSE 0 END) * 100 AS SIGNED) AS current_month_net_cents,
-  CAST(SUM(CASE
-    WHEN CHECK_DATE >= ? 
-      AND CHECK_DATE < ? 
-      AND NET_AMOUNT > 0
-    THEN NET_AMOUNT ELSE 0 END) * 100 AS SIGNED) AS current_month_outflow_cents,
-  CAST(SUM(CASE 
-    WHEN CHECK_DATE >= ? 
-      AND CHECK_DATE < ? 
-    THEN NET_AMOUNT ELSE 0 END) * 100 AS SIGNED) AS fytd_net_cents,
-  CAST(SUM(CASE 
-    WHEN CHECK_DATE >= ? 
-      AND CHECK_DATE < ? 
-      AND NET_AMOUNT > 0
-    THEN NET_AMOUNT ELSE 0 END) * 100 AS SIGNED) AS fytd_outflow_cents,
-
-  CAST(SUM(CASE 
-    WHEN CHECK_DATE >= ? 
-      AND CHECK_DATE < ? 
-    THEN NET_AMOUNT ELSE 0 END) * 100 AS SIGNED) AS prior_year_month_net_cents,
-
-  CAST(SUM(CASE 
-    WHEN CHECK_DATE >= ? 
-      AND CHECK_DATE < ? 
-      AND NET_AMOUNT > 0
-    THEN NET_AMOUNT ELSE 0 END) * 100 AS SIGNED) AS prior_year_month_outflow_cents,
-
-  CAST(SUM(CASE 
-    WHEN CHECK_DATE >= ? 
-    AND CHECK_DATE < ? 
-    THEN NET_AMOUNT ELSE 0 END) * 100 AS SIGNED) AS prior_fytd_net_cents,
-
-  CAST(SUM(CASE 
-    WHEN CHECK_DATE >= ? 
-    AND CHECK_DATE < ? 
-    AND NET_AMOUNT > 0
-    THEN NET_AMOUNT ELSE 0 END) * 100 AS SIGNED) AS prior_fytd_outflow_cents
-
-FROM LEDGER
-WHERE ACCOUNT_RE = 4
-AND CHECK_DATE >= ? AND CHECK_DATE < ?
-";
+$summarySql = sql($sql_folder, "summary_month_fytd_yoy");
 $summaryStmt = $conn->prepare($summarySql);
 $summaryStmt->bind_param(
   'ssssssssssssssssss',
@@ -224,17 +120,7 @@ $summaryDelta = [
   ],
 ];
 
-$monthlySql = "SELECT
-    YEAR(CHECK_DATE)  AS y,
-    MONTH(CHECK_DATE) AS m,
-    CAST(SUM(NET_AMOUNT) * 100 AS SIGNED) AS net_cents,
-    CAST(SUM(CASE WHEN NET_AMOUNT > 0 THEN NET_AMOUNT ELSE 0 END) * 100 AS SIGNED) AS outflow_cents
-  FROM LEDGER
-  WHERE ACCOUNT_RE = 4
-    AND CHECK_DATE >= ? AND CHECK_DATE < ?
-  GROUP BY YEAR(CHECK_DATE), MONTH(CHECK_DATE)
-  ORDER BY y ASC, m ASC
-";
+$monthlySql = sql($sql_folder, "summary_monthly_series_24");
 $monthlyStmt = $conn->prepare($monthlySql);
 $monthlyStmt->bind_param('ss', $seriesStart, $end);
 $monthlyStmt->execute();

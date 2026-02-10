@@ -16,7 +16,7 @@ const YEAR_KEY = "fy";
 const KEYS = [YEAR_KEY, MONTH_KEY];
 
 async function fetchSnapshot(query: string): Promise<DepartmentFunctionSummaryResponse> {
-  const res = await fetch(`${API_ROOT}/department-function-summary.php?${query}`);
+  const res = await fetch(`${API_ROOT}/reports/department-function-summary.php?${query}`);
   const json = (await res.json()) as unknown;
   if (isApiError(json)) {
     throw new Error(json.error);
