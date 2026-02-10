@@ -21,7 +21,7 @@ const YEAR_KEY = "fy";
 const KEYS = [YEAR_KEY, MONTH_KEY];
 
 async function fetchSnapshot(query: string): Promise<FinancialHealthSnapshotResponse> {
-  const res = await fetch(`${API_ROOT}/financial-health-snapshot.php?${query}`);
+  const res = await fetch(`${API_ROOT}/reports/financial-health-snapshot.php?${query}`);
   const json = (await res.json()) as unknown;
   if (isApiError(json)) {
     throw new Error(json.error);
