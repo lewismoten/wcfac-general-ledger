@@ -1,0 +1,45 @@
+SELECT
+  COA_DEPT.ID AS dept_id,
+  COA_DEPT.Name AS dept,
+  CAST(
+    SUM(
+      CASE
+        WHEN LEDGER.CHECK_DATE >= ?
+        AND LEDGER.CHECK_DATE < ?
+        AND LEDGER.NET_AMOUNT > 0 THEN LEDGER.NET_AMOUNT
+        ELSE 0
+      END
+    ) * 100 AS SIGNED
+  ) AS current_month_outflow_cents,
+  CAST(
+    SUM(
+      CASE
+        WHEN LEDGER.CHECK_DATE >= ?
+        AND LEDGER.CHECK_DATE < ?
+        AND LEDGER.NET_AMOUNT > 0 THEN LEDGER.NET_AMOUNT
+        ELSE 0
+      END
+    ) * 100 AS SIGNED
+  ) AS fytd_outflow_cents,
+  CAST(
+    SUM(
+      CASE
+        WHEN LEDGER.CHECK_DATE >= ?
+        AND LEDGER.CHECK_DATE < ?
+        AND LEDGER.NET_AMOUNT > 0 THEN LEDGER.NET_AMOUNT
+        ELSE 0
+      END
+    ) * 100 AS SIGNED
+  ) AS prior_fytd_outflow_cents
+FROM
+  LEDGER
+  INNER JOIN COA_DEPT ON LEDGER.ACCOUNT_DEPT = COA_DEPT.ID
+WHERE
+  LEDGER.ACCOUNT_RE = 4
+  AND LEDGER.CHECK_DATE >= ?
+  AND LEDGER.CHECK_DATE < ?
+GROUP BY
+  COA_DEPT.ID,
+  COA_DEPT.Name
+ORDER BY
+  fytd_outflow_cents DESC

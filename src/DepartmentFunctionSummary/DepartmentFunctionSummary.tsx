@@ -6,7 +6,7 @@ import Stack from "@mui/material/Stack";
 import { API_ROOT } from "../utils/API_ROOT";
 import { MonthSelect } from "../components/SearchInputs/MonthSelect";
 import { YearSelect } from "../components/SearchInputs/YearSelect";
-import type { DepartmentFunctionSummaryResponse } from "./types";
+import type { DeptFunctionSummaryResponse } from "./types";
 import { isApiError } from "../utils/isApiError";
 import { subParams } from "../utils/subParams";
 import { QueryStatus } from "../components/QueryStatus";
@@ -15,13 +15,13 @@ const MONTH_KEY = "fm";
 const YEAR_KEY = "fy";
 const KEYS = [YEAR_KEY, MONTH_KEY];
 
-async function fetchSnapshot(query: string): Promise<DepartmentFunctionSummaryResponse> {
+async function fetchSnapshot(query: string): Promise<DeptFunctionSummaryResponse> {
   const res = await fetch(`${API_ROOT}/reports/department-function-summary.php?${query}`);
   const json = (await res.json()) as unknown;
   if (isApiError(json)) {
     throw new Error(json.error);
   }
-  return json as DepartmentFunctionSummaryResponse;
+  return json as DeptFunctionSummaryResponse;
 }
 
 export const DepartmentFunctionSummary = () => {
@@ -39,7 +39,7 @@ const [searchParams] = useSearchParams();
     isError,
     isLoading,
     isFetching,
-  } = useQuery<DepartmentFunctionSummaryResponse, Error>({
+  } = useQuery<DeptFunctionSummaryResponse, Error>({
     queryKey: ["department-function-summary", query],
     placeholderData: keepPreviousData,
     queryFn: () => fetchSnapshot(query),
