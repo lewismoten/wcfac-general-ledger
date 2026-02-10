@@ -11,6 +11,7 @@ const ROOT_DIR = join(__dirname, "..");
 const DIST_DIR = join(ROOT_DIR, "dist");
 const API_DIR = join(ROOT_DIR, "api");
 const CONFIG_FILE = join(ROOT_DIR, "config.php");
+const HTACCESS = join(ROOT_DIR, "src/.htaccess");
 
 (async () => {
   const json = await readFile('config.json', 'utf8');
@@ -48,6 +49,10 @@ const CONFIG_FILE = join(ROOT_DIR, "config.php");
     await client.ensureDir(remoteDir);
     await client.cd(remoteDir);
     await client.uploadFromDir(DIST_DIR);
+
+    console.log('uploading htaccess');
+    await client.cd(remoteDir);
+    await client.uploadFrom(HTACCESS, '.htaccess');
 
     console.log('uploading back-end');
     const remoteApiDir = `${remoteDir}/api`;

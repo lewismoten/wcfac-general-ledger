@@ -1,0 +1,1 @@
+CREATE INDEX idx_ledger_re_date ON LEDGER (ACCOUNT_RE, CHECK_DATE);
