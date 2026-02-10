@@ -4,3 +4,5 @@ config.php
 node_modules
 data/
 dist/
+
+.DS_Store

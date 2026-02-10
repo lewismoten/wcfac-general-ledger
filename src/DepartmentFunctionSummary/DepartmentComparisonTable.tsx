@@ -2,14 +2,12 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import { useMemo, useState, type FunctionComponent } from "react";
-import Chip from "@mui/material/Chip";
 import Table from "@mui/material/Table";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
-import Tooltip from "@mui/material/Tooltip";
-import type { DeptFunctionSummaryResponse, Flags, ViewMode } from "./types";
+import type { DeptFunctionSummaryResponse, Flags, ViewMode } from "./types.ts";
 import Stack from "@mui/material/Stack";
 import { deltaColor, fmtDeltaMoney, fmtMoney } from './helpers.ts';
 import TableSortLabel from "@mui/material/TableSortLabel";
@@ -33,9 +31,24 @@ interface Row {
 interface TableDataProps {
   data: DeptFunctionSummaryResponse,
   viewMode: ViewMode,
-  baseThresholdCents: number
+  label: string,
+  description: string,
+  suggested?: string,
+  note?: string
 }
 
+const Suggested: FunctionComponent<{ value?: string }> = ({ value }) => {
+  if (!value) return null;
+  return <Typography variant="body2" sx={{ opacity: 0.8, mb: 1 }}>
+    <i>Suggested review:</i> {value}
+  </Typography>
+}
+const Note: FunctionComponent<{ value?: string }> = ({ value }) => {
+  if (!value) return null;
+  return <Typography variant="body2" sx={{ opacity: 0.8, mb: 1 }}>
+    {value}
+  </Typography>
+}
 
 const computeFlags = (
   r: { dept: string; fytd_outflow_cents: number; prior_fytd_outflow_cents: number },
@@ -51,7 +64,9 @@ const computeFlags = (
 type SortKey = "dept_id" | "dept" | "prior" | "current" | "delta" | "pct";
 type SortDir = "asc" | "desc";
 
-export const TableData: FunctionComponent<TableDataProps> = ({ data, viewMode, baseThresholdCents }) => {
+const baseThresholdCents = 100000;
+
+export const DepartmentComparisonTable: FunctionComponent<TableDataProps> = ({ data, viewMode, label, description, suggested, note }) => {
 
   const [sortKey, setSortKey] = useState<SortKey>("delta");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -66,7 +81,13 @@ export const TableData: FunctionComponent<TableDataProps> = ({ data, viewMode, b
     });
 
     const filtered = norm
-      .filter((r) => (baseThresholdCents > 0 ? r.prior_fytd_outflow_cents >= baseThresholdCents : true));
+      .filter(({ flags: { noSpendYet, newNoPrior } }) => {
+        switch (viewMode) {
+          case "no_spend": return noSpendYet;
+          case "new": return newNoPrior;
+          default: return true;
+        }
+      });
     const sorted = [...filtered].sort((a, b) => {
       const aa = sortDir === 'asc' ? a : b;
       const bb = sortDir === 'asc' ? b : a;
@@ -100,13 +121,18 @@ export const TableData: FunctionComponent<TableDataProps> = ({ data, viewMode, b
       setSortDir(k === "dept" ? "asc" : "desc");
     }
   };
+
+  if (rows.length === 0) return null;
+
   return (
     <Card>
       <CardContent>
-        <Typography variant="h6">Departments</Typography>
+        <Typography variant="h6">{label}</Typography>
         <Typography variant="body2" sx={{ opacity: 0.8, mb: 1 }}>
-          FYTD outflow compared to prior FYTD (same FYTD months). Percent may be muted when prior base is small.
+          {description}
         </Typography>
+        <Suggested value={suggested} />
+        <Note value={note} />
 
         <Table size="small">
           <TableHead>
@@ -158,26 +184,17 @@ export const TableData: FunctionComponent<TableDataProps> = ({ data, viewMode, b
             {rows.map((r) => {
               const flags = (r as any).flags as Flags | undefined;
               const pctText = fmtPct(r.variance_pct);
-              const smallBase = !!flags?.smallBase;
               const newNoPrior = !!flags?.newNoPrior;
 
               return (
                 <TableRow key={r.dept_id} hover>
-                <TableCell>
-                  <Typography variant="body2">{r.dept_id}</Typography>
-                </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">{r.dept_id}</Typography>
+                  </TableCell>
 
                   <TableCell sx={{ maxWidth: 420 }}>
                     <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
                       <Typography variant="body2">{r.dept}</Typography>
-
-                      {newNoPrior && <Chip size="small" label="New" />}
-                      {flags?.noSpendYet && <Chip size="small" label="No spend yet" />}
-                      {smallBase && (
-                        <Tooltip title={`Prior FYTD is small (${fmtMoney(r.prior_fytd_outflow_cents)}). Percent can look exaggerated.`}>
-                          <Chip size="small" label="Small base" />
-                        </Tooltip>
-                      )}
                     </Stack>
                   </TableCell>
 
