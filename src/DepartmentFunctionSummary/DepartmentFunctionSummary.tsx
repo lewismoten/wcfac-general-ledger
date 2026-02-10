@@ -14,6 +14,9 @@ import { ExecutiveSummary } from "./ExecutiveSummary";
 import { ContextHeader } from "./ContextHeader";
 import { DepartmentComparisonTable } from "./DepartmentComparisonTable";
 import Typography from "@mui/material/Typography";
+import List from "@mui/material/List";
+import ListItemText from "@mui/material/ListItemText";
+import ListItem from "@mui/material/ListItem";
 
 const MONTH_KEY = "fm";
 const YEAR_KEY = "fy";
@@ -81,6 +84,9 @@ export const DepartmentFunctionSummary = () => {
           <Typography variant="body2" sx={{ opacity: 0.8, mb: 1 }}>
             Departments are grouped by spending behavior to help identify where review or follow-up may be useful. Changes are not inherently positive or negative.
           </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.8, mb: 1 }}>
+            Δ % may appear large when prior-year spending was minimal or zero.
+          </Typography>
 
           <DepartmentComparisonTable
             label="Largest FYTD Spending Variances"
@@ -89,25 +95,54 @@ export const DepartmentFunctionSummary = () => {
             data={data}
             viewMode={"top10"} />
           <DepartmentComparisonTable
-            label="New or Reactivated Spending Lines" 
-            description="Departments that show spending this fiscal year but had no recorded expenditures during the same period last year. This may reflect new programs, reclassification, or timing differences." 
+            label="New or Reactivated Spending Lines"
+            description="Departments that show spending this fiscal year but had no recorded expenditures during the same period last year. This may reflect new programs, reclassification, or timing differences."
             suggested="verify authorization, funding source, and budget alignment."
-            data={data} 
+            data={data}
             viewMode={"new"} />
           <DepartmentComparisonTable
-            label="Inactive Departments With Prior Spending" 
-            description="Departments that have not recorded any expenditures so far this fiscal year but had spending during the same period last year. This may indicate delayed activity, seasonal timing, or pending obligations." 
+            label="Inactive Departments With Prior Spending"
+            description="Departments that have not recorded any expenditures so far this fiscal year but had spending during the same period last year. This may indicate delayed activity, seasonal timing, or pending obligations."
             suggested="confirm whether activity is expected later in the fiscal year."
-            data={data} 
+            data={data}
             viewMode={"no_spend"} />
           <DepartmentComparisonTable
-            label="Full Departmental FYTD Comparison" 
-            description="A complete list of departments showing fiscal-year-to-date spending compared to the same months last fiscal year. Percentage changes may appear large when prior-year spending was minimal." 
+            label="Mapping"
+            description="Mapping indicates transactions not mapped to a standard department code."
+            suggested="something?"
+            data={data}
+            viewMode={"mapping"} />
+          <DepartmentComparisonTable
+            label="Full Departmental FYTD Comparison"
+            description="A complete list of departments showing fiscal-year-to-date spending compared to the same months last fiscal year. Percentage changes may appear large when prior-year spending was minimal."
             note="Reference list; no action implied."
-            data={data} 
+            data={data}
             viewMode={"all"} />
         </>
       )}
+      <Typography variant="h6">Questions Finance/Audit might ask</Typography>
+      <List>
+        <ListItem>
+          <ListItemText>
+            Are any large variances caused by reclassification rather than spending?
+          </ListItemText>
+        </ListItem>
+        <ListItem>
+          <ListItemText>
+            Which zero-spend departments expect activity later this FY?
+          </ListItemText>
+        </ListItem>
+        <ListItem>
+          <ListItemText>
+            Are “New or Reactivated” lines tied to approved budget actions?
+          </ListItemText>
+        </ListItem>
+        <ListItem>
+          <ListItemText>
+            Are any variances driven by one-time or capital expenditures?
+          </ListItemText>
+        </ListItem>
+      </List>
     </Stack>
   );
 };

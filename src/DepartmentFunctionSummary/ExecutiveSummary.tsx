@@ -22,6 +22,13 @@ export const ExecutiveSummary: FunctionComponent<{
   summary: Summary | null
 }> = ({ summary }) => {
   if (!summary) return null;
+
+  // Need to create sentence like:
+  // Net FYTD outflow is down $1.96M compared to the same 
+  // period last year, driven primarily by timing shifts 
+  // in debt service, capital projects, and departmental 
+  // operations.
+
   return (
     <Card>
       <CardContent>

@@ -58,6 +58,12 @@ const computeFlags = (
   if (r.prior_fytd_outflow_cents === 0 && r.fytd_outflow_cents > 0) flags.newNoPrior = true;
   if (r.fytd_outflow_cents === 0 && r.prior_fytd_outflow_cents > 0) flags.noSpendYet = true;
   if (r.prior_fytd_outflow_cents > 0 && r.prior_fytd_outflow_cents < baseThresholdCents) flags.smallBase = true;
+  if(/invalid/i.test(r.dept)) flags.mapping = true;
+  if(/^expenditures?$/i.test(r.dept)) flags.mapping = true;
+  if(/transfers/i.test(r.dept)) flags.mapping = true;
+  if(/miscellaneous/i.test(r.dept)) flags.mapping = true;
+  if(/misc\./i.test(r.dept)) flags.mapping = true;
+  if(/non-departmental/i.test(r.dept)) flags.mapping = true;
   return flags;
 };
 
@@ -81,10 +87,11 @@ export const DepartmentComparisonTable: FunctionComponent<TableDataProps> = ({ d
     });
 
     const filtered = norm
-      .filter(({ flags: { noSpendYet, newNoPrior } }) => {
+      .filter(({ flags: { noSpendYet, newNoPrior, mapping } }) => {
         switch (viewMode) {
           case "no_spend": return noSpendYet;
           case "new": return newNoPrior;
+          case "mapping": return mapping;
           default: return true;
         }
       });

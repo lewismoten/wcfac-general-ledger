@@ -24,11 +24,12 @@ export type DeptFunctionSummaryResponse = {
   by_department: DeptOutflowRow[];
   top10_by_fytd: DeptOutflowRow[];
 };
-export type ViewMode = "top10" | "all" | "new" | "no_spend";
+export type ViewMode = "top10" | "all" | "new" | "no_spend" | "mapping";
 
 
 export type Flags = {
   smallBase?: boolean;
   newNoPrior?: boolean;
   noSpendYet?: boolean;
+  mapping?: boolean;
 };
