@@ -6,3 +6,4 @@ if (!defined('APP_BOOTSTRAPPED')) {
 
 require_once __DIR__ . '/mysqli.php';
 require_once __DIR__ . '/connect.php';
+require_once __DIR__ . '/sql.php';

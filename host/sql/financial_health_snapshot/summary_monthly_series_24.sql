@@ -1,0 +1,24 @@
+SELECT
+  YEAR (CHECK_DATE) AS y,
+  MONTH (CHECK_DATE) AS m,
+  CAST(SUM(NET_AMOUNT) * 100 AS SIGNED) AS net_cents,
+  CAST(
+    SUM(
+      CASE
+        WHEN NET_AMOUNT > 0 THEN NET_AMOUNT
+        ELSE 0
+      END
+    ) * 100 AS SIGNED
+  ) AS outflow_cents
+FROM
+  LEDGER
+WHERE
+  ACCOUNT_RE = 4
+  AND CHECK_DATE >= ?
+  AND CHECK_DATE < ?
+GROUP BY
+  YEAR (CHECK_DATE),
+  MONTH (CHECK_DATE)
+ORDER BY
+  y ASC,
+  m ASC

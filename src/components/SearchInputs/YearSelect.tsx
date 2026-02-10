@@ -3,8 +3,8 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import { useMemo, type FunctionComponent, type ReactElement } from "react";
-import { useSearchParamInt } from "../utils/useSearchParamInt";
-import { currentFiscalYear } from "../utils/fiscal";
+import { useSearchParamInt } from "../../utils/useSearchParamInt";
+import { currentFiscalYear } from "../../utils/fiscal";
 
 interface YearSelectProps {
   max?: number;

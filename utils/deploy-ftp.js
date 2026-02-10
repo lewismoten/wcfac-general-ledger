@@ -9,9 +9,11 @@ const __dirname = dirname(__filename);
 
 const ROOT_DIR = join(__dirname, "..");
 const DIST_DIR = join(ROOT_DIR, "dist");
-const API_DIR = join(ROOT_DIR, "api");
-const CONFIG_FILE = join(ROOT_DIR, "config.php");
-const HTACCESS = join(ROOT_DIR, "src/.htaccess");
+const HOST_DIR = join(ROOT_DIR, "host");
+const API_DIR = join(HOST_DIR, "api");
+const SQL_DIR = join(HOST_DIR, "sql");
+const CONFIG_FILE = join(HOST_DIR, "config.php");
+const HTACCESS = join(HOST_DIR, ".htaccess");
 
 (async () => {
   const json = await readFile('config.json', 'utf8');
@@ -54,14 +56,21 @@ const HTACCESS = join(ROOT_DIR, "src/.htaccess");
     await client.cd(remoteDir);
     await client.uploadFrom(HTACCESS, '.htaccess');
 
-    console.log('uploading back-end');
+    console.log('uploading back-end api');
     const remoteApiDir = `${remoteDir}/api`;
     await client.ensureDir(remoteApiDir);
     await client.cd(remoteApiDir);
     await client.uploadFromDir(API_DIR);
 
+    console.log('uploading back-end sql');
+    const remoteSqlDir = `${remoteDir}/sql`;
+    await client.ensureDir(remoteSqlDir);
+    await client.cd(remoteSqlDir);
+    await client.uploadFromDir(SQL_DIR);
+
     if (existsSync(CONFIG_FILE)) {
       console.log('uploading back-end configuration');
+      await client.cd(remoteApiDir);
       await client.uploadFrom(CONFIG_FILE, `config.php`);
     }
 

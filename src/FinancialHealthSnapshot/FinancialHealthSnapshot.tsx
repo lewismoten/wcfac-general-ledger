@@ -1,48 +1,31 @@
 import { useMemo } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
-import CircularProgress from "@mui/material/CircularProgress";
 
-import type { ApiError } from "../LedgerPage/ApiError";
 import { API_ROOT } from "../utils/API_ROOT";
-import { MonthSelect } from "../SearchInputs/MonthSelect";
-import { YearSelect } from "../SearchInputs/YearSelect";
+import { MonthSelect } from "../components/SearchInputs/MonthSelect";
+import { YearSelect } from "../components/SearchInputs/YearSelect";
 import type { FinancialHealthSnapshotResponse } from "./types";
 import { Summary } from "./components/Summary";
 import { TrendChart } from "./components/TrendChart";
 import { DepartmentComparisonTable } from "./components/DepartmentComparisonTable";
 import { FyCompareBarChart } from "./components/FyCompareBarChart";
 import { ExecutiveSummary } from "./components/ExecutiveSummary";
+import { isApiError } from "../utils/isApiError";
+import { subParams } from "../utils/subParams";
+import { QueryStatus } from "../components/QueryStatus";
 
 const MONTH_KEY = "fm";
 const YEAR_KEY = "fy";
 const KEYS = [YEAR_KEY, MONTH_KEY];
 
-const subParams = (params: URLSearchParams, ...ids: string[]) => {
-  const subset = new URLSearchParams();
-  ids.forEach((id) => {
-    const v = params.get(id);
-    if (v != null && v !== "") subset.set(id, v);
-  });
-  return subset.toString();
-};
-
-const isApiError = (x: unknown): x is ApiError =>
-  typeof x === "object" && x !== null && "error" in x;
-
 async function fetchSnapshot(query: string): Promise<FinancialHealthSnapshotResponse> {
-  const res = await fetch(`${API_ROOT}/financial-health-snapshot.php?${query}`);
-
-  // If your API always returns JSON, this is fine.
-  // If it might return HTML on fatal error, wrap in try/catch.
+  const res = await fetch(`${API_ROOT}/reports/financial-health-snapshot.php?${query}`);
   const json = (await res.json()) as unknown;
-
   if (isApiError(json)) {
     throw new Error(json.error);
   }
-
   return json as FinancialHealthSnapshotResponse;
 }
 
@@ -72,22 +55,7 @@ export const FinancialHealthSnapshot = () => {
         <MonthSelect id={MONTH_KEY} fiscal />
         <YearSelect id={YEAR_KEY} fiscal />
       </Stack>
-
-      {isError && (
-        <Alert severity="error">
-          {error.message}
-        </Alert>
-      )}
-
-      {isLoading && (
-        <Stack direction="row" spacing={1} alignItems="center">
-          <CircularProgress size={18} />
-          <div>Loading snapshot…</div>
-        </Stack>
-      )}
-      {isFetching && !isLoading && (
-        <Alert severity="info">Updating…</Alert>
-      )}
+      <QueryStatus isError={isError} error={error} isLoading={isLoading} isFetching={isFetching} />
       <ExecutiveSummary data={data} />
       <Summary data={data} />
       <TrendChart months={data?.monthly_24.months} title="General Fund Activity" />
