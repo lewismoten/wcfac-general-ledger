@@ -107,9 +107,9 @@ export const DepartmentFunctionSummary = () => {
             data={data}
             viewMode={"no_spend"} />
           <DepartmentComparisonTable
-            label="Mapping"
-            description="Mapping indicates transactions not mapped to a standard department code."
-            suggested="something?"
+            label="Unmapped or Non-Standard Department Codes"
+            description="Transactions recorded outside standard department codes, including non-departmental, transfers, and invalid or placeholder accounts."
+            suggested="Confirm proper classification, ensure consistency with chart-of-accounts standards, and determine whether remapping is required for accurate reporting."
             data={data}
             viewMode={"mapping"} />
           <DepartmentComparisonTable
@@ -120,7 +120,7 @@ export const DepartmentFunctionSummary = () => {
             viewMode={"all"} />
         </>
       )}
-      <Typography variant="h6">Questions Finance/Audit might ask</Typography>
+      <Typography variant="h6">Questions for Finance/Audit Review</Typography>
       <List>
         <ListItem>
           <ListItemText>
@@ -140,6 +140,11 @@ export const DepartmentFunctionSummary = () => {
         <ListItem>
           <ListItemText>
             Are any variances driven by one-time or capital expenditures?
+          </ListItemText>
+        </ListItem>
+        <ListItem>
+          <ListItemText>
+            Do any unmapped or invalid accounts appear repeatedly across months?
           </ListItemText>
         </ListItem>
       </List>

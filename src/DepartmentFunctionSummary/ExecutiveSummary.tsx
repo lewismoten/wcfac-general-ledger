@@ -1,4 +1,4 @@
-import type { FunctionComponent } from "react"
+import type { FunctionComponent } from "react";
 import type { DeptOutflowRow } from "./types";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -19,25 +19,29 @@ interface Summary {
 }
 
 export const ExecutiveSummary: FunctionComponent<{
-  summary: Summary | null
+  summary: Summary | null;
 }> = ({ summary }) => {
   if (!summary) return null;
 
-  // Need to create sentence like:
-  // Net FYTD outflow is down $1.96M compared to the same 
-  // period last year, driven primarily by timing shifts 
-  // in debt service, capital projects, and departmental 
-  // operations.
+  const narrative = buildExecutiveNarrative(summary);
 
   return (
     <Card>
       <CardContent>
         <Typography variant="h6">Executive Summary</Typography>
 
-        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", mt: 1 }}>
+        <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>
+          {narrative}
+        </Typography>
+
+        <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", mt: 1.5 }}>
           <SummaryStat label="Total FYTD (Current)" value={fmtMoney(summary.totalCurrent)} />
           <SummaryStat label="Total FYTD (Prior)" value={fmtMoney(summary.totalPrior)} />
-          <SummaryStat label="Δ FYTD" value={fmtDeltaMoney(summary.totalDelta)} color={deltaColor(summary.totalDelta)} />
+          <SummaryStat
+            label="Δ FYTD"
+            value={fmtDeltaMoney(summary.totalDelta)}
+            color={deltaColor(summary.totalDelta)}
+          />
           <SummaryStat label="New / no prior" value={`${summary.newNoPriorCount}`} />
           <SummaryStat label="No spend yet" value={`${summary.noSpendYetCount}`} />
         </Stack>
@@ -68,7 +72,52 @@ export const ExecutiveSummary: FunctionComponent<{
         </Stack>
       </CardContent>
     </Card>
-  )
+  );
+};
+
+function buildExecutiveNarrative(s: Summary): string {
+  if(s.totalDelta === 0) {
+    return "Net FYTD outflow is consistent with the same period last fiscal year.";
+
+  }
+  const absDelta = Math.abs(s.totalDelta);
+
+  const direction =
+    s.totalDelta < 0 ? "down" : s.totalDelta > 0 ? "up" : "flat";
+
+  const vsPrior = `Net FYTD outflow is ${direction} ${fmtDeltaMoney(absDelta, true)} compared to the same period last year.`;
+
+  const primaryDrivers =
+    s.totalDelta < 0 ? s.topDown : s.totalDelta > 0 ? s.topUp : [];
+
+  const driverNames = primaryDrivers
+    .slice(0, 3)
+    .map((r) => r.dept)
+    .filter(Boolean);
+
+  const driversClause =
+    driverNames.length > 0
+      ? ` Primary drivers: movement in ${joinAsSentence(driverNames)}.`
+      : "";
+
+  const contextBits: string[] = [];
+  if (s.newNoPriorCount > 0) contextBits.push(`${s.newNoPriorCount} new/re-activated line(s)`);
+  if (s.noSpendYetCount > 0) contextBits.push(`${s.noSpendYetCount} department(s) with no spend yet`);
+  if (s.smallBaseCount >= 5) contextBits.push(`${s.smallBaseCount} small-base variance(s)`);
+
+  const contextClause =
+    contextBits.length > 0
+      ? ` Oversight notes: ${joinAsSentence(contextBits)}.`
+      : "";
+
+  return `${vsPrior}${driversClause}${contextClause}`;
+}
+
+function joinAsSentence(items: string[]): string {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
 }
 
 const SummaryStat = ({

@@ -7,9 +7,10 @@ export const fmtMoney = (cents: number) =>
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(centsToDollars(cents));
-export const fmtDeltaMoney = (cents: number) => {
+
+export const fmtDeltaMoney = (cents: number, unsigned: boolean = false) => {
   if (cents === 0) return "—";
-  const sign = cents < 0 ? "−" : "+";
+  const sign = unsigned ? "" : (cents < 0 ? "-" : "+");
   return `${sign}${fmtMoney(Math.abs(cents))}`;
 };
 
