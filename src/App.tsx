@@ -9,8 +9,17 @@ export default function App() {
   const currentTab = location.pathname === '/financial-health-snapshot' ? 1 : 0;
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static" color="default" elevation={1}>
+    <Box sx={{ 
+      flexGrow: 1,
+      "@media print": {
+          p: 0,
+        }
+      }}>
+      <AppBar position="static" color="default" elevation={1} sx={{
+        '@media print': {
+          display: 'none'
+        }
+      }}>
         <Toolbar variant="dense">
           <Typography variant="h6" sx={{ mr: 4, fontWeight: 'bold' }}>
             Audit / Finance Oversight
@@ -35,7 +44,12 @@ export default function App() {
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ 
+        p: 3,
+        "@media print": {
+          p: 0,
+        },
+       }}>
         <Routes>
           <Route path="/" element={<LedgerPage />} />
           <Route path="/ledger" element={<LedgerPage />} />

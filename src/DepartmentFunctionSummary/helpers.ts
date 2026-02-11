@@ -1,3 +1,4 @@
+import { currentFiscalMonth, currentFiscalYear } from "../utils/fiscal";
 
 const centsToDollars = (cents: number) => cents / 100;
 
@@ -38,3 +39,22 @@ export const baseOptions = [
   { label: "Prior ≥ $10k", cents: 10000 * 100 },
   { label: "Prior ≥ $100k", cents: 100000 * 100 },
 ] as const;
+
+export const formatFiscalTitle = (name: string, fy: number, fm: number) => {
+  if(fy === 0 || fm === 0) {
+    const now = new Date();
+    if(fy === 0) fy = currentFiscalYear(now);
+    if(fm === 0) fm = currentFiscalMonth(now);
+  } 
+  const fiscalYearStartMonth = 7; // July
+  const calendarMonth = ((fm - 1 + fiscalYearStartMonth - 1) % 12);
+  const calendarYear = calendarMonth < fiscalYearStartMonth - 1 ? fy - 1 : fy;
+
+  const d = new Date(calendarYear, calendarMonth, 1);
+
+  const monthName = new Intl.DateTimeFormat(undefined, {
+    month: "long"
+  }).format(d);
+
+  return `${name} · ${monthName} · FY${fy}`;
+};

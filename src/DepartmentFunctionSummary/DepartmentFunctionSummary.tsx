@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import Stack from "@mui/material/Stack";
@@ -10,13 +10,14 @@ import type { DeptFunctionSummaryResponse } from "./types";
 import { isApiError } from "../utils/isApiError";
 import { subParams } from "../utils/subParams";
 import { QueryStatus } from "../components/QueryStatus";
-import { ExecutiveSummary } from "./ExecutiveSummary";
-import { ContextHeader } from "./ContextHeader";
-import { DepartmentComparisonTable } from "./DepartmentComparisonTable";
+import { ExecutiveSummary } from "./components/ExecutiveSummary";
+import { ContextHeader } from "./components/ContextHeader";
+import { DepartmentComparisonTable } from "./components/DepartmentComparisonTable";
 import Typography from "@mui/material/Typography";
 import List from "@mui/material/List";
 import ListItemText from "@mui/material/ListItemText";
 import ListItem from "@mui/material/ListItem";
+import { formatFiscalTitle } from "./helpers";
 
 const MONTH_KEY = "fm";
 const YEAR_KEY = "fy";
@@ -33,6 +34,13 @@ async function fetchSnapshot(query: string): Promise<DeptFunctionSummaryResponse
 export const DepartmentFunctionSummary = () => {
   const [searchParams] = useSearchParams();
   const query = useMemo(() => subParams(searchParams, ...KEYS), [searchParams.toString()]);
+
+  const fy = Number(searchParams.get('fy'));
+  const fm = Number(searchParams.get('fm'));
+  
+  useEffect(() => {
+    document.title = formatFiscalTitle("Department Function Summary", fy, fm);
+  }, [fy, fm]);
 
   const { data, error, isError, isLoading, isFetching } = useQuery<DeptFunctionSummaryResponse, Error>({
     queryKey: ["department-function-summary", query],
@@ -69,8 +77,14 @@ export const DepartmentFunctionSummary = () => {
   }, [data]);
 
   return (
-    <Stack spacing={2}>
-      <Stack direction="row" spacing={2}>
+    <Stack spacing={2} sx={{
+      '@media print': {
+        gap: 0.25
+      }
+    }}>
+      <Stack direction="row" spacing={2} sx={{'@media print': {
+          display: 'none'
+        }}}>
         <MonthSelect id={MONTH_KEY} fiscal />
         <YearSelect id={YEAR_KEY} fiscal />
       </Stack>

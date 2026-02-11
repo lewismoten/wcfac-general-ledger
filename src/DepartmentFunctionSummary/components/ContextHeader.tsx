@@ -2,8 +2,8 @@ import type { FunctionComponent } from "react";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
-import { formatMonthYear, formatRange } from "./helpers";
-import type { DeptFunctionSummaryResponse } from "./types";
+import { formatMonthYear, formatRange } from "../helpers";
+import type { DeptFunctionSummaryResponse } from "../types";
 
 interface ContextHeaderProps {
   data: DeptFunctionSummaryResponse

@@ -1,6 +1,8 @@
 export type DeptOutflowRow = {
   dept_id: number;
   dept: string;
+  func_id: number;
+  func: string;
   current_month_outflow_cents: number;
   fytd_outflow_cents: number;
   prior_fytd_outflow_cents: number;
