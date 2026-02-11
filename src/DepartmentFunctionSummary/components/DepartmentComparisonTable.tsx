@@ -7,9 +7,9 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import TableBody from "@mui/material/TableBody";
-import type { DeptFunctionSummaryResponse, Flags, ViewMode } from "./types.ts";
+import type { DeptFunctionSummaryResponse, Flags, ViewMode } from "../types.ts";
 import Stack from "@mui/material/Stack";
-import { deltaColor, fmtDeltaMoney, fmtMoney } from './helpers.ts';
+import { deltaColor, fmtDeltaMoney, fmtMoney } from '../helpers.ts';
 import TableSortLabel from "@mui/material/TableSortLabel";
 
 const fmtPct = (pct: number | null) => {
@@ -19,6 +19,8 @@ const fmtPct = (pct: number | null) => {
 
 interface Row {
   flags: Flags;
+  func_id: number;
+  func: string;
   dept_id: number;
   dept: string;
   current_month_outflow_cents: number;
@@ -58,16 +60,16 @@ const computeFlags = (
   if (r.prior_fytd_outflow_cents === 0 && r.fytd_outflow_cents > 0) flags.newNoPrior = true;
   if (r.fytd_outflow_cents === 0 && r.prior_fytd_outflow_cents > 0) flags.noSpendYet = true;
   if (r.prior_fytd_outflow_cents > 0 && r.prior_fytd_outflow_cents < baseThresholdCents) flags.smallBase = true;
-  if(/invalid/i.test(r.dept)) flags.mapping = true;
-  if(/^expenditures?$/i.test(r.dept)) flags.mapping = true;
-  if(/transfers/i.test(r.dept)) flags.mapping = true;
-  if(/miscellaneous/i.test(r.dept)) flags.mapping = true;
-  if(/misc\./i.test(r.dept)) flags.mapping = true;
-  if(/non-departmental/i.test(r.dept)) flags.mapping = true;
+  if (/invalid/i.test(r.dept)) flags.mapping = true;
+  if (/^expenditures?$/i.test(r.dept)) flags.mapping = true;
+  if (/transfers/i.test(r.dept)) flags.mapping = true;
+  if (/miscellaneous/i.test(r.dept)) flags.mapping = true;
+  if (/misc\./i.test(r.dept)) flags.mapping = true;
+  if (/non-departmental/i.test(r.dept)) flags.mapping = true;
   return flags;
 };
 
-type SortKey = "dept_id" | "dept" | "prior" | "current" | "delta" | "pct";
+type SortKey = "dept_id" | "dept" | "func_id" | "func" | "prior" | "current" | "delta" | "pct";
 type SortDir = "asc" | "desc";
 
 const baseThresholdCents = 100000;
@@ -112,6 +114,10 @@ export const DepartmentComparisonTable: FunctionComponent<TableDataProps> = ({ d
           return aa.dept.localeCompare(bb.dept);
         case "dept_id":
           return bb.dept_id - aa.dept_id;
+        case "func":
+          return aa.func.localeCompare(bb.func);
+        case "func_id":
+          return bb.func_id - aa.func_id;
         case "prior":
           return bb.prior_fytd_outflow_cents - aa.prior_fytd_outflow_cents;
       }
@@ -131,6 +137,23 @@ export const DepartmentComparisonTable: FunctionComponent<TableDataProps> = ({ d
 
   if (rows.length === 0) return null;
 
+  const printSize = '0.7rem';
+
+  const textStyle = {
+    maxWidth: 420,
+    alignItems: "center",
+    flexWrap: "wrap",
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    '@media print': {
+      whiteSpace: 'normal',
+      overflow: 'visible',
+      textOverflow: 'clip',
+      fontSize: printSize,
+    }
+  };
+
   return (
     <Card>
       <CardContent>
@@ -141,12 +164,59 @@ export const DepartmentComparisonTable: FunctionComponent<TableDataProps> = ({ d
         <Suggested value={suggested} />
         <Note value={note} />
 
-        <Table size="small">
+        <Table size="small" sx={{
+          tableLayout: 'fixed',
+          width: '100%',
+          '& th, & td': {
+            px: 0.75,
+            py: 0.5,
+            fontSize: '0.78rem',
+            lineHeight: 1.2,
+            verticalAlign: 'top'
+          },
+          '& td .MuiTypography-root, & td .Mui Typography-root': {
+            fontSize: 'inherit',
+            lineHeight: 'inherit'
+          },
+          '@media print': {
+            "& th, & td": {
+              px: 0.5,
+              py: 0.35,
+              fontSize: printSize,
+            },
+            '& td .MuiTypography-root, & th .MuiTypograhy-root': {
+              fontSize: 'inherit'
+            }
+          }
+        }}>
+          <colgroup>
+            <col style={{ width: 25 }} />
+            <col style={{ width: 120 }} />
+            <col style={{ width: 52 }} />
+            <col style={{ width: 140 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 110 }} />
+            <col style={{ width: 90 }} />
+            <col style={{ width: 70 }} />
+          </colgroup>
           <TableHead>
             <TableRow>
+
+              <TableCell sortDirection={sortKey === "func_id" ? sortDir : false}>
+                <TableSortLabel active={sortKey === "func_id"} direction={sortDir} onClick={() => requestSort("func_id")}>
+                  F.&nbsp;ID
+                </TableSortLabel>
+              </TableCell>
+
+              <TableCell sortDirection={sortKey === "func" ? sortDir : false}>
+                <TableSortLabel active={sortKey === "func"} direction={sortDir} onClick={() => requestSort("func")}>
+                  Function
+                </TableSortLabel>
+              </TableCell>
+
               <TableCell sortDirection={sortKey === "dept_id" ? sortDir : false}>
                 <TableSortLabel active={sortKey === "dept_id"} direction={sortDir} onClick={() => requestSort("dept_id")}>
-                  ID
+                  D.&nbsp;ID
                 </TableSortLabel>
               </TableCell>
 
@@ -196,11 +266,20 @@ export const DepartmentComparisonTable: FunctionComponent<TableDataProps> = ({ d
               return (
                 <TableRow key={r.dept_id} hover>
                   <TableCell>
+                    <Typography variant="body2">{r.func_id}</Typography>
+                  </TableCell>
+
+                  <TableCell sx={textStyle}>
+                    <Stack direction="row" spacing={1}>
+                      <Typography variant="body2">{r.func}</Typography>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
                     <Typography variant="body2">{r.dept_id}</Typography>
                   </TableCell>
 
-                  <TableCell sx={{ maxWidth: 420 }}>
-                    <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+                  <TableCell sx={textStyle}>
+                    <Stack direction="row" spacing={1}>
                       <Typography variant="body2">{r.dept}</Typography>
                     </Stack>
                   </TableCell>

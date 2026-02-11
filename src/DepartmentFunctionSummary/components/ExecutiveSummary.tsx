@@ -1,11 +1,11 @@
 import type { FunctionComponent } from "react";
-import type { DeptOutflowRow } from "./types";
+import type { DeptOutflowRow } from "../types";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Box from "@mui/material/Box";
-import { deltaColor, fmtDeltaMoney, fmtMoney } from "./helpers";
+import { deltaColor, fmtDeltaMoney, fmtMoney } from "../helpers";
 
 interface Summary {
   totalCurrent: number;
