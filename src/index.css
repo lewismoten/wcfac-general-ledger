@@ -23,11 +23,9 @@ a:hover {
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  display: block !important;
+  place-items: unset !important;
+  min-height: auto !important;
 }
 
 h1 {
@@ -64,5 +62,100 @@ button:focus-visible {
   }
   button {
     background-color: #f9f9f9;
+  }
+}
+
+.screen-only { display: block; }
+.print-only { display: none; }
+
+@media print {
+  @page {
+    margin: 0.5in;
+  }
+  .screen-only { display: none !important; }
+  .print-only { display: block !important; }
+
+  .MuiCard-root {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  html, body {
+    display: block !important;
+    place-items: unset !important;
+    min-height: auto !important;
+  }
+  .MuiContainer-root,
+  .MuiPaper-root,
+  .MuiStack-root {
+    overflow: visible !important;
+  }
+
+  .report-page {
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 0 14px 0 6px !important;
+  }
+  .report-page,
+  .report-page * {
+    box-sizing: border-box;
+  }
+
+  .report-page .MuiCard-root {
+    box-shadow: none !important;
+    border-color: #bbb !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    border-width: 1.25px !important;
+    border-style: solid !important;
+  }
+
+  .report-page .MuiCardContent-root {
+    padding: 10px 12px !important;
+  }
+
+  .report-page .recharts-wrapper,
+  .report-page .recharts-surface {
+    max-width: 100% !important;
+  }
+
+  .report-page .chart-container {
+    overflow: hidden !important;
+  }
+
+  .recharts-wrapper,
+  .recharts-surface {
+    max-width: 100% !important;
+  }
+
+  .report-page .MuiTypography-h6 {
+    font-size: 14px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .report-page .MuiTypography-h5 {
+    font-size: 16px !important;
+    line-height: 1.15 !important;
+  }
+
+  .report-page .MuiTypography-body1,
+  .report-page .MuiTypography-body2 {
+    line-height: 1.2 !important;
+  }
+
+  .report-page .MuiTypography-overline {
+    line-height: 1.1 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .report-page .report-grid {
+    gap: 8px !important;
+  }
+
+  .report-page .no-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  .report-page .large-text {
+    font-size: 12px !important;
   }
 }
