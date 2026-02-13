@@ -41,6 +41,111 @@ function bind_params(mysqli_stmt $stmt, string $types, array $values): void {
   }
 }
 
+function ensure_observed(mysqli $conn, array $rowsChunk): void {
+  $valuesSql = [];
+  $types = '';
+  $vals = [];
+
+  foreach ($rowsChunk as $r) {
+    $valuesSql[] = "(?, ?)";
+    $types .= "ss";
+    $vals[] = $r['content_hash'];
+    $vals[] = $r['anchor_hash'];
+  }
+
+  $sql = "
+    INSERT IGNORE INTO ap308_observed (content_hash, anchor_hash)
+    VALUES " . implode(',', $valuesSql) . "
+  ";
+
+  $stmt = $conn->prepare($sql);
+  if (!$stmt) throw new RuntimeException('Prepare failed (ensure_observed): ' . $conn->error);
+  bind_params($stmt, $types, $vals);
+  if (!$stmt->execute()) throw new RuntimeException('Execute failed (ensure_observed): ' . $stmt->error);
+  $stmt->close();
+}
+
+function fetch_observed_ids(mysqli $conn, array $rowsChunk): array {
+  $hashes = [];
+  foreach ($rowsChunk as $r) {
+    $h = strtolower($r['content_hash']);
+    $hashes[$h] = true;
+  }
+  $hashes = array_keys($hashes);
+  if (count($hashes) === 0) return [];
+
+  $placeholders = implode(',', array_fill(0, count($hashes), '?'));
+  $sql = "SELECT id, content_hash FROM ap308_observed WHERE content_hash IN ($placeholders)";
+
+  $stmt = $conn->prepare($sql);
+  if (!$stmt) throw new RuntimeException('Prepare failed (fetch_observed_ids): ' . $conn->error);
+
+  $types = str_repeat('s', count($hashes));
+  bind_params($stmt, $types, $hashes);
+
+  if (!$stmt->execute()) throw new RuntimeException('Execute failed (fetch_observed_ids): ' . $stmt->error);
+
+  $res = $stmt->get_result();
+  $map = [];
+  while ($row = $res->fetch_assoc()) {
+    $map[strtolower($row['content_hash'])] = (int)$row['id'];
+  }
+  $stmt->close();
+
+  // sanity: every input hash should be present
+  foreach ($hashes as $h) {
+    if (!isset($map[strtolower($h)])) {
+      throw new RuntimeException("Observed id lookup failed for content_hash: $h");
+    }
+  }
+
+  return $map;
+}
+
+function upsert_manifest(mysqli $conn, string $sourceFolder, string $sourceFile, array $rowsChunk, array $observedIdByHash): void {
+  $valuesSql = [];
+  $types = '';
+  $vals = [];
+
+  foreach ($rowsChunk as $r) {
+    $obsId = $observedIdByHash[strtolower($r['content_hash'])] ?? null;
+    if (!$obsId) throw new RuntimeException('Missing observed_id for content_hash');
+
+    // observed_id, folder, file, source_row_num (metadata), anchor_hash, content_hash, source_row_key
+    $valuesSql[] = "(?, ?, ?, ?, ?, ?, ?)";
+    $types .= "ississs";
+
+    $vals[] = (int)$obsId;
+    $vals[] = $sourceFolder;
+    $vals[] = $sourceFile;
+    $vals[] = (int)($r['source_row_num'] ?? $r['stable_row_num'] ?? 0);
+    $vals[] = $r['anchor_hash'];
+    $vals[] = $r['content_hash'];
+    $vals[] = $r['source_row_key'];
+  }
+
+  $sql = "
+    INSERT INTO ap308_manifest
+      (observed_id, source_folder, source_file, source_row_num, anchor_hash, content_hash, source_row_key)
+    VALUES " . implode(',', $valuesSql) . "
+    ON DUPLICATE KEY UPDATE
+      source_row_num = VALUES(source_row_num),
+      anchor_hash = VALUES(anchor_hash),
+      content_hash = VALUES(content_hash),
+      source_row_key = VALUES(source_row_key),
+      last_seen_at = CURRENT_TIMESTAMP,
+      seen_count = seen_count + 1,
+      is_active = 1
+  ";
+
+  $stmt = $conn->prepare($sql);
+  if (!$stmt) throw new RuntimeException('Prepare failed (upsert_manifest): ' . $conn->error);
+
+  bind_params($stmt, $types, $vals);
+  if (!$stmt->execute()) throw new RuntimeException('Execute failed (upsert_manifest): ' . $stmt->error);
+  $stmt->close();
+}
+
 try {
 
   $config = require __DIR__ . "/../../config.php";
@@ -61,8 +166,8 @@ try {
   foreach ($rows as $i => $r) {
     if (!is_array($r)) throw new RuntimeException("Row {$i} must be an object");
 
-    $stableRowNum = require_int($r['stable_row_num'] ?? $r['source_row_num'] ?? null, 'stable_row_num');
-    if ($stableRowNum <= 0) throw new RuntimeException("Row {$i}: stable_row_num must be > 0");
+    $stableRowNum = require_int($r['source_row_num'] ?? $r['source_row_num'] ?? null, 'source_row_num');
+    if ($stableRowNum <= 0) throw new RuntimeException("Row {$i}: source_row_num must be > 0");
 
     $anchorHash  = require_hash($r['anchor_hash'] ?? null, 'anchor_hash');
     $contentHash = require_hash($r['content_hash'] ?? null, 'content_hash');
@@ -74,7 +179,7 @@ try {
     $rowKey = strtolower((string)$rowKey);
 
     $incoming[] = [
-      'stable_row_num' => $stableRowNum,
+      'source_row_num' => $stableRowNum,
       'anchor_hash' => $anchorHash,
       'content_hash' => $contentHash,
       'source_row_key' => $rowKey,
@@ -82,7 +187,7 @@ try {
   }
 
   $existingByNum = [];
-  $nums = array_values(array_unique(array_map(fn($r) => (int)$r['stable_row_num'], $incoming)));
+  $nums = array_values(array_unique(array_map(fn($r) => (int)$r['source_row_num'], $incoming)));
   sort($nums);
 
   $conn->begin_transaction();
@@ -91,11 +196,11 @@ foreach (chunk($nums, 400) as $numsChunk) {
   $placeholders = implode(',', array_fill(0, count($numsChunk), '?'));
 
   $sqlSel = "
-    SELECT id, stable_row_num, content_hash
+    SELECT id, source_row_num, content_hash
     FROM ap308_manifest
     WHERE source_folder = ?
       AND source_file = ?
-      AND stable_row_num IN ($placeholders)
+      AND source_row_num IN ($placeholders)
   ";
 
   $stmtSel = $conn->prepare($sqlSel);
@@ -108,49 +213,9 @@ foreach (chunk($nums, 400) as $numsChunk) {
 
   $res = $stmtSel->get_result();
   while ($row = $res->fetch_assoc()) {
-    $existingByNum[(int)$row['stable_row_num']] = $row;
+    $existingByNum[(int)$row['source_row_num']] = $row;
   }
   $stmtSel->close();
-}
-
-  foreach (chunk($incoming, 400) as $rowsChunk) {
-  $valuesSql = [];
-  $types = '';
-  $vals = [];
-
-  foreach ($rowsChunk as $r) {
-    $valuesSql[] = "(?, ?, ?, ?, ?, ?)";
-    $types .= "ssisss";
-    array_push(
-      $vals,
-      $sourceFolder,
-      $sourceFile,
-      (int)$r['stable_row_num'],
-      $r['anchor_hash'],
-      $r['content_hash'],
-      $r['source_row_key']
-    );
-  }
-
-  $sqlUpsert = "
-    INSERT INTO ap308_manifest
-      (source_folder, source_file, stable_row_num, anchor_hash, content_hash, source_row_key)
-    VALUES " . implode(',', $valuesSql) . "
-    ON DUPLICATE KEY UPDATE
-      anchor_hash = VALUES(anchor_hash),
-      content_hash = VALUES(content_hash),
-      source_row_key = VALUES(source_row_key),
-      last_seen_at = CURRENT_TIMESTAMP,
-      seen_count = seen_count + 1,
-      is_active = 1
-  ";
-
-  $stmtUp = $conn->prepare($sqlUpsert);
-  if (!$stmtUp) throw new RuntimeException('Prepare failed: ' . $conn->error);
-
-  bind_params($stmtUp, $types, $vals);
-  if (!$stmtUp->execute()) throw new RuntimeException('Upsert execute failed: ' . $stmtUp->error);
-  $stmtUp->close();
 }
 
 $observedExisting = [];
@@ -228,51 +293,69 @@ foreach (chunk($allContent, 400) as $chChunk) {
   $stmtObsSel2->close();
 }
 
-
-foreach (chunk($incoming, 400) as $rowsChunk) {
-  $cases = [];
-  $whereParts = [];
+  foreach (chunk($incoming, 400) as $rowsChunk) {
+  $valuesSql = [];
   $types = '';
   $vals = [];
 
   foreach ($rowsChunk as $r) {
     $ch = strtolower($r['content_hash']);
-    $obsId = $observedIdByContent[$ch] ?? null;
-    if ($obsId === null) continue;
-
-    // CASE WHEN stable_row_num = ? THEN ?
-    $cases[] = "WHEN stable_row_num = ? THEN ?";
-    $types .= "ii";
-    array_push($vals, (int)$r['stable_row_num'], (int)$obsId);
-
-    // WHERE stable_row_num IN (...)
-    $whereParts[] = "?";
-    $types .= "i";
-    $vals[] = (int)$r['stable_row_num'];
+    $observedId = $observedIdByContent[$sh] ?? null;
+    if (!$observedId) {
+      throw new RuntimeException("Missing observed_id for content_hash: {$r['content_hash']}");
+    }
+  
+    $valuesSql[] = "(?, ?, ?, ?, ?, ?, ?)";
+    $types .= "ississs";
+    
+    array_push(
+      $vals,
+      (int)$observedId,
+      $sourceFolder,
+      $sourceFile,
+      (int)$r['source_row_num'],
+      $r['anchor_hash'],
+      $r['content_hash'],
+      $r['source_row_key']
+    );
   }
 
-  if (count($cases) === 0) continue;
-
-  $sqlLink = "
-    UPDATE ap308_manifest
-    SET observed_id = CASE " . implode(' ', $cases) . " ELSE observed_id END
-    WHERE source_folder = ?
-      AND source_file = ?
-      AND stable_row_num IN (" . implode(',', $whereParts) . ")
+  $sqlUpsert = "
+    INSERT INTO ap308_manifest
+      (
+      observed_id,
+      source_folder, 
+      source_file, 
+      source_row_num,
+      anchor_hash, 
+      content_hash, 
+      source_row_key
+      )
+    VALUES " . implode(',', $valuesSql) . "
+    ON DUPLICATE KEY UPDATE
+      source_row_num = VALUES(source_row_num),
+      anchor_hash = VALUES(anchor_hash),
+      content_hash = VALUES(content_hash),
+      source_row_key = VALUES(source_row_key),
+      last_seen_at = CURRENT_TIMESTAMP,
+      seen_count = seen_count + 1,
+      is_active = 1
   ";
 
-  // prepend folder/file (types: ss)
-  $types = "ss" . $types;
-  array_unshift($vals, $sourceFile);
-  array_unshift($vals, $sourceFolder);
+  $stmtUp = $conn->prepare($sqlUpsert);
+  if (!$stmtUp) throw new RuntimeException('Prepare failed: ' . $conn->error);
 
-  $stmtLink = $conn->prepare($sqlLink);
-  if (!$stmtLink) throw new RuntimeException('Prepare failed: ' . $conn->error);
-
-  bind_params($stmtLink, $types, $vals);
-  if (!$stmtLink->execute()) throw new RuntimeException('Manifest link execute failed: ' . $stmtLink->error);
-  $stmtLink->close();
+  bind_params($stmtUp, $types, $vals);
+  if (!$stmtUp->execute()) throw new RuntimeException('Upsert execute failed: ' . $stmtUp->error);
+  $stmtUp->close();
 }
+
+foreach (chunk($incoming, 400) as $rowsChunk) {
+  ensure_observed($conn, $rowsChunk);
+  $idMap = fetch_observed_ids($conn, $rowsChunk);
+  upsert_manifest($conn, $sourceFolder, $sourceFile, $rowsChunk, $idMap);
+}
+
   $conn->commit();
 
   $counts = [
@@ -286,7 +369,7 @@ foreach (chunk($incoming, 400) as $rowsChunk) {
   $outRows = $returnRows ? [] : null;
 
   foreach ($incoming as $r) {
-    $num = (int)$r['stable_row_num'];
+    $num = (int)$r['source_row_num'];
     $prev = $existingByNum[$num] ?? null;
 
     if ($prev === null) {
@@ -312,7 +395,7 @@ foreach (chunk($incoming, 400) as $rowsChunk) {
     else $counts['observed_new']++;
     if($returnRows) {
       $outRows[] = [
-        'stable_row_num' => $num,
+        'source_row_num' => $num,
         'source_row_key' => $r['source_row_key'],
         'status' => $status,
         'existing_id' => $existingId,

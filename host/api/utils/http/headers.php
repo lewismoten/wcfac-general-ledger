@@ -34,7 +34,7 @@ function json_out(int $code, array $payload): void {
   echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
   exit;
 }
-function json_error(int $code, array $message): void {
+function json_error(int $code, string $message): void {
   json_out($code, ['ok' => false, 'error' => $message]);
 }
 

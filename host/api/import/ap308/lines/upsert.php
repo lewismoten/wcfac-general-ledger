@@ -142,7 +142,7 @@ try {
 
       $kept++;
       $valuesSql[] = "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-      $types .= "isssssssssssssss";
+      $types .= 'i'.str_repeat('s', 14);
 
       array_push(
         $vals,
@@ -189,6 +189,14 @@ try {
 
     $stmtUp = $conn->prepare($sqlUpsert);
     if (!$stmtUp) throw new RuntimeException('Prepare failed: ' . $conn->error);
+
+    $expected = substr_count($sqlUpsert, '?');
+    $actualTypes = strlen($types);
+    $actualVals = count($vals);
+
+    if ($expected !== $actualVals || $actualTypes !== $actualVals) {
+      throw new RuntimeException("Bind mismatch: expected ?=$expected, vals=$actualVals, types=$actualTypes");
+    }
 
     bind_params($stmtUp, $types, $vals);
     if (!$stmtUp->execute()) throw new RuntimeException('Execute failed: ' . $stmtUp->error);
