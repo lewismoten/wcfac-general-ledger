@@ -13,7 +13,8 @@
     "deploy:ftp": "node utils/deploy-ftp.js",
     "convert-chart-of-accounts": "node ./utils/convertChartOfAccounts.js",
     "convert-ap-register": "node ./utils/convertApRegister.js",
-    "AP308:clean": "node ./utils/cleanAP308.js"
+    "AP308:clean": "node ./utils/cleanAP308.js",
+    "AP308:hash": "node ./utils/hashAP308.js"
   },
   "peerDependencies": {
     "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
