@@ -126,6 +126,19 @@ $finalFileName = sprintf('%s %s.csv', $stampForName, $rid);
 $relativePath = $year . '/' . $finalFileName;
 $absolutePath = $folder . DIRECTORY_SEPARATOR . $finalFileName;
 
+$fhCheck = fopen($tmpPath, 'rb');
+if ($fhCheck === false) {
+  echo "Unable to open uploaded file for validation.";
+  exit;
+} else {
+  $first6 = fread($fhCheck, 6);
+  fclose($fhCheck);
+  if ($first6 !== "AP308,") {
+    echo "Invalid file format. File must be an AP308 export.";
+    exit;
+  }
+}
+
 if (!move_uploaded_file($tmpPath, $absolutePath)) {
   echo "Failed to save uploaded file.";
   exit;
