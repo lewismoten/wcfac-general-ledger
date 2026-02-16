@@ -184,6 +184,9 @@ try {
   fclose($fh);
 }
 // -------[ We are now uploaded]
+echo "uploaded<br>";
+// -------[ We are now uploaded]
+
 function open_csv(string $absPath): SplFileObject {
   if (!is_file($absPath)) {
     echo "CSV not found";
@@ -235,10 +238,17 @@ $maxCheckTs = null;
 $minPaid = null;
 $maxPaid = null;
 
+$corruptedCount = 0;
+
 while (!$csv->eof()) {
+  if($corruptedCount>=10) break;
+
   $row = $csv->fgetcsv();
   if (!is_array($row)) continue;
   $rowNumber++;
+  if($rowNumber % 10000 === 0) {
+    echo "Processing row ${rowNumber} ...<br>";
+  }
   $allEmpty = true;
   foreach ($row as $cell) {
     if ($cell !== null && trim((string)$cell) !== '') { $allEmpty = false; break; }
@@ -246,55 +256,182 @@ while (!$csv->eof()) {
   if ($allEmpty) continue;
 
   $row = array_slice(array_pad($row, $colCount, ''), 0, $colCount);
-  $value = trim((string)($row[0] ?? ''));
 
-  if(in_array($value, $allowedNonDigitTokens, true)) continue;
-  if($value === '') continue;
-  if (!ctype_digit($value)) {
-    echo "File appears corrupted at row ${rowNumber}: Invalid P/O NO.";
-    exit;
+  // 1: Purchase Order Number
+  $po = trim((string)($row[0] ?? ''));
+  if(in_array($po, $allowedNonDigitTokens, true)) continue;
+  if($po === '') continue;
+
+  $rowCount++;
+
+  if (!ctype_digit($po)) {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Invalid Purchase Order Number \"" . htmlspecialchars($po, ENT_QUOTES, 'UTF-8')."\"</li>";
+    continue;
   }
 
-  $paidStr = trim((string)($row[6] ?? '2013/07'));
+  // 2: Vendor Number
+  $vendorNo = trim((string)($row[1] ?? ''));
+  if($vendorNo === '') {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Missing Vendor Number.</li>";
+    continue;
+  }
+  if (!ctype_digit($vendorNo)) {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Invalid Vendor Number \"" . htmlspecialchars($vendorNo, ENT_QUOTES, 'UTF-8')."\"</li>";
+    continue;
+  }
+
+  // 3: Vendor Name
+  $vendorName = trim((string)($row[2] ?? ''));
+  if($vendorName === '') {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Missing Vendor Name.</li>";
+    continue;
+  }
+
+  // 4: Invoice Number
+  $invoiceNo = trim((string)($row[3] ?? ''));
+  if($invoiceNo === '') {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Missing Invoice Number.</li>";
+    continue;
+  }
+
+  // 5: Invoice Date
+  $invoiceDateStr = trim((string)($row[4] ??''));
+  if($invoiceDateStr === '') {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Invoice Date Missing</li>";
+    continue;
+  }
+  $invoiceDate = DateTimeImmutable::createFromFormat('n/j/Y', $invoiceDateStr);
+  $errs = DateTimeImmutable::getLastErrors();
+  if ($invoiceDate === false || ($errs['warning_count'] ?? 0) > 0 || ($errs['error_count'] ?? 0) > 0) {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Invoice Date Invalid \"" . htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8')."\"</li>";
+    continue;
+  }
+  $invoiceDate = $invoiceDate->setTime(0, 0, 0);
+  $invoiceDateTs = $invoiceDate->getTimestamp();
+
+  // 6: Account No
+  $account = (string)($row[5] ?? '');
+  $account = preg_replace('/\s+/', ' ', $account);
+  $re = '/^\s*' .             // leading spaces before fund
+      '(\d{1,7})\s*' .        // fund (1-7 digits), allow spaces around dash
+      '-\s*(\d{6})\s*' .      // dept (6 digits)
+      '-\s*(\d{4})\s*' .      // obj (4 digits)
+      '-\s*(\d{1,3})?\s*' .   // project: digits + trailing spaces OR blank spaces
+      '-\s*(\d{1,3})?\s*' .   // sub1
+      '-\s*(\d{1,3})?\s*$' .  // sub2
+      '/';
+  if (!preg_match($re, $account, $parts)) {
+    $corruptedCount++;
+    echo "<li>Row {$rowNumber}: Account No Invliad \"" . htmlspecialchars($account, ENT_QUOTES, 'UTF-8')."\"</li>";
+    continue;
+  }
+  $account_fund = $parts[1];//1-7
+  $account_dep = $parts[2];//6
+  $account_obj = $parts[3];//4
+  $account_project = $parts[4];//0-3
+  $account_sub1 = $parts[5];//0-3
+  $account_sub2 = $parts[6];//0-3
+
+  // 7: Account Paid
+  $paidStr = trim((string)($row[6] ?? ''));
   if($paidStr === '') {
-    echo "File appears corrupted at row ${rowNumber}: Missing Account Paid";
-    exit;
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Missing Account Paid</li>";
+    continue;
   }
   if (!preg_match('/^\d{4}\/\d{2}$/', $paidStr)) {
-    echo "Invalid Account Paid format at row {$rowNumber}: " . htmlspecialchars($paidStr, ENT_QUOTES, 'UTF-8');
-    exit;
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Account Paid Invalid \"" . htmlspecialchars($paidStr, ENT_QUOTES, 'UTF-8')."\"</li>";
+    continue;
   }
   [$year, $month] = explode('/', $paidStr);
   $monthInt = (int)$month;
   if ($monthInt < 1 || $monthInt > 12) {
-    echo "Invalid month in Account Paid at row {$rowNumber}: " . htmlspecialchars($paidStr, ENT_QUOTES, 'UTF-8');
-    exit;
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Account Paid invalid month \"" . htmlspecialchars($paidStr, ENT_QUOTES, 'UTF-8')."\"</li>";
+    continue;
   }
   $ymInt = ((int)$year) * 100 + $monthInt;
   $minPaid = ($minPaid === null) ? $ymInt : min($minPaid, $ymInt);
   $maxPaid = ($maxPaid === null) ? $ymInt : max($maxPaid, $ymInt);
 
-  $checkDateString = trim((string)($row[9] ??'')); // 8/21/2013
+  // 8: Net Amount
+  $netRaw = trim((string)($row[7] ?? ''));
+  if ($netRaw === '') {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Net Amount Missing</li>";
+    continue;
+  }
+  if (!preg_match('/^-?\d+(?:\.\d{1,2})?$/', $netRaw)) {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Net Amount Invalid \"" . htmlspecialchars($netRaw, ENT_QUOTES, 'UTF-8')."\"</li>";
+    continue;
+  }
+  // 9: Check Number
+  $checkNo = trim((string)($row[8] ?? ''));
+  if($checkNo === '') {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Missing Check Number.</li>";
+    continue;
+  }
+  if (!ctype_digit($checkNo)) {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Invalid Check Number \"" . htmlspecialchars($checkNo, ENT_QUOTES, 'UTF-8')."\"</li>";
+    continue;
+  }
+
+  // 10: Check Date
+  $checkDateString = trim((string)($row[9] ??''));
   if($checkDateString === '') {
-    echo "File appears corrupted at row ${rowNumber}: Missing check date";
-    exit;
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Check Date Missing</li>";
+    continue;
   }
   $checkDate = DateTimeImmutable::createFromFormat('n/j/Y', $checkDateString);
   $errs = DateTimeImmutable::getLastErrors();
   if ($checkDate === false || ($errs['warning_count'] ?? 0) > 0 || ($errs['error_count'] ?? 0) > 0) {
-    echo "Invalid date in row {$rowNumber}, column 10: " . htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8');
-    exit;
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Check Date Invalid \"" . htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8')."\"</li>";
+    continue;
   }
   $checkDate = $checkDate->setTime(0, 0, 0);
   $checkTs = $checkDate->getTimestamp();
   $minCheckTs = ($minCheckTs === null) ? $checkTs : min($minCheckTs, $checkTs);
   $maxCheckTs = ($maxCheckTs === null) ? $checkTs : max($maxCheckTs, $checkTs);
 
-  $rowCount++;
+  // 11: Description
+  $description = trim((string)($row[10] ??''));
+  if($description === '') {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Description Missing</li>";
+    continue;
+  }
+
+  // 12: Batch
+  $batch = trim((string)($row[11] ?? ''));
+  if($batch === '') {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Missing Batch</li>";
+    continue;
+  }
+  if (!ctype_digit($batch)) {
+    $corruptedCount++;
+    echo "<li>Row ${rowNumber}: Invalid Batch \"" . htmlspecialchars($batch, ENT_QUOTES, 'UTF-8')."\"</li>";
+    continue;
+  }
 }
 
-echo "uploaded<br>";
-echo "Rows: ${rowCount}<br>";
+if($corruptedCount > 0) {
+  echo "File appears corrupted.<br>";
+}
+echo "Transactions: ${rowCount}<br>";
 
 if ($minCheckTs === null || $maxCheckTs === null) {
   echo "No valid dates found.";
@@ -318,3 +455,4 @@ if ($minPaid !== null) {
 // AP Report 2013-2014.csv 2.6MB Paid: Jul'13-Jun'14 Checks: 2012-09-19 to 2014-10-22 [15,396]
 // AP Report 2014-2015.csv 2.5MB Paid: Jul'14-Jun'15 Checks: 2014-05-21 to 2017-12-27 [14,622]
 // AP Report 2015-2016.csv 2.5MB Paid: Jul'15-Jun'16 Checks: 2013-05-22 to 2016-08-17 [14,431]
+// Note - some check dates were cut after the account was paid (re-issued?)
