@@ -200,6 +200,22 @@ function open_csv(string $absPath): SplFileObject {
   return $f;
 }
 
+$headers = [
+  'PO NO.',
+  'VEND. NO.',
+  'VENDOR NAME',
+  'INVOICE NO.',
+  'INVOICE DATE',
+  'ACCOUNT NO.',
+  'ACCT PD',
+  'NET AMOUNT',
+  'CHECK NO.',
+  'CHECK DATE',
+  'DESCRIPTION',
+  'BATCH',
+];
+$allowedNonDigitTokens = ['AP308', 'P/O', 'NO.'];
+
 $csv = open_csv($absolutePath);
 $csv->rewind();
 $headerRow = $csv->fgetcsv();
@@ -213,10 +229,28 @@ $header = array_map(
 );
 $colCount = count($header);
 $rowCount = 0;
+$rowNumber = 0;
 $preview = [];
 while (!$csv->eof()) {
   $row = $csv->fgetcsv();
   if (!is_array($row)) continue;
+  $rowNumber++;
+  $allEmpty = true;
+  foreach ($row as $cell) {
+    if ($cell !== null && trim((string)$cell) !== '') { $allEmpty = false; break; }
+  }
+  if ($allEmpty) continue;
+
+  $row = array_slice(array_pad($row, $colCount, ''), 0, $colCount);
+  $value = trim((string)($row[0] ?? ''));
+
+  if(in_array($value, $allowedNonDigitTokens, true)) continue;
+  if($value === '') continue;
+  if (!ctype_digit($value)) {
+    echo "File appears corrupted at row ${rowNumber}.";
+    exit;
+  }
+
   $rowCount++;
 }
 
