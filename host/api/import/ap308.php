@@ -230,8 +230,10 @@ $header = array_map(
 $colCount = count($header);
 $rowCount = 0;
 $rowNumber = 0;
-$minTs = null;
-$maxTs = null;
+$minCheckTs = null;
+$maxCheckTs = null;
+$minPaid = null;
+$maxPaid = null;
 
 while (!$csv->eof()) {
   $row = $csv->fgetcsv();
@@ -253,21 +255,40 @@ while (!$csv->eof()) {
     exit;
   }
 
-  $checkDate = trim((string)($row[9] ??'')); // 8/21/2013
-  if($checkDate === '') {
-    echo "File appears corrupted at row ${rowNumber}: Invalid date";
+  $paidStr = trim((string)($row[6] ?? '2013/07'));
+  if($paidStr === '') {
+    echo "File appears corrupted at row ${rowNumber}: Missing Account Paid";
     exit;
   }
-  $dt = DateTimeImmutable::createFromFormat('n/j/Y', $checkDate);
+  if (!preg_match('/^\d{4}\/\d{2}$/', $paidStr)) {
+    echo "Invalid Account Paid format at row {$rowNumber}: " . htmlspecialchars($paidStr, ENT_QUOTES, 'UTF-8');
+    exit;
+  }
+  [$year, $month] = explode('/', $paidStr);
+  $monthInt = (int)$month;
+  if ($monthInt < 1 || $monthInt > 12) {
+    echo "Invalid month in Account Paid at row {$rowNumber}: " . htmlspecialchars($paidStr, ENT_QUOTES, 'UTF-8');
+    exit;
+  }
+  $ymInt = ((int)$year) * 100 + $monthInt;
+  $minPaid = ($minPaid === null) ? $ymInt : min($minPaid, $ymInt);
+  $maxPaid = ($maxPaid === null) ? $ymInt : max($maxPaid, $ymInt);
+
+  $checkDateString = trim((string)($row[9] ??'')); // 8/21/2013
+  if($checkDateString === '') {
+    echo "File appears corrupted at row ${rowNumber}: Missing check date";
+    exit;
+  }
+  $checkDate = DateTimeImmutable::createFromFormat('n/j/Y', $checkDateString);
   $errs = DateTimeImmutable::getLastErrors();
-  if ($dt === false || ($errs['warning_count'] ?? 0) > 0 || ($errs['error_count'] ?? 0) > 0) {
+  if ($checkDate === false || ($errs['warning_count'] ?? 0) > 0 || ($errs['error_count'] ?? 0) > 0) {
     echo "Invalid date in row {$rowNumber}, column 10: " . htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8');
     exit;
   }
-  $dt = $dt->setTime(0, 0, 0);
-  $ts = $dt->getTimestamp();
-  $minTs = ($minTs === null) ? $ts : min($minTs, $ts);
-  $maxTs = ($maxTs === null) ? $ts : max($maxTs, $ts);
+  $checkDate = $checkDate->setTime(0, 0, 0);
+  $checkTs = $checkDate->getTimestamp();
+  $minCheckTs = ($minCheckTs === null) ? $checkTs : min($minCheckTs, $checkTs);
+  $maxCheckTs = ($maxCheckTs === null) ? $checkTs : max($maxCheckTs, $checkTs);
 
   $rowCount++;
 }
@@ -275,13 +296,25 @@ while (!$csv->eof()) {
 echo "uploaded<br>";
 echo "Rows: ${rowCount}<br>";
 
-if ($minTs === null || $maxTs === null) {
+if ($minCheckTs === null || $maxCheckTs === null) {
   echo "No valid dates found.";
   exit;
 }
 
-$minDate = (new DateTimeImmutable('@' . $minTs))->setTimezone(new DateTimeZone('America/New_York'))->format('Y-m-d');
-$maxDate = (new DateTimeImmutable('@' . $maxTs))->setTimezone(new DateTimeZone('America/New_York'))->format('Y-m-d');
+$minDate = (new DateTimeImmutable('@' . $minCheckTs))->setTimezone(new DateTimeZone('America/New_York'))->format('Y-m-d');
+$maxDate = (new DateTimeImmutable('@' . $maxCheckTs))->setTimezone(new DateTimeZone('America/New_York'))->format('Y-m-d');
 
-echo "Min date: {$minDate}<br>";
-echo "Max date: {$maxDate}<br>";
+echo "Min check date: {$minDate}<br>";
+echo "Max check date: {$maxDate}<br>";
+
+if ($minPaid !== null) {
+  $minPaidStr = sprintf('%04d/%02d', intdiv($minPaid, 100), $minPaid % 100);
+  $maxPaidStr = sprintf('%04d/%02d', intdiv($maxPaid, 100), $maxPaid % 100);
+
+  echo "Account Paid Min: {$minPaidStr}<br>";
+  echo "Account Paid Max: {$maxPaidStr}<br>";
+}
+// AP Reports exported by Fiscal Year (ACCT PD)
+// AP Report 2013-2014.csv 2.6MB Paid: Jul'13-Jun'14 Checks: 2012-09-19 to 2014-10-22 [15,396]
+// AP Report 2014-2015.csv 2.5MB Paid: Jul'14-Jun'15 Checks: 2014-05-21 to 2017-12-27 [14,622]
+// AP Report 2015-2016.csv 2.5MB Paid: Jul'15-Jun'16 Checks: 2013-05-22 to 2016-08-17 [14,431]
