@@ -273,7 +273,7 @@ while (!$csv->eof()) {
 }
 
 echo "uploaded<br>";
-echo "Rows: ${rowCoun}t<br>";
+echo "Rows: ${rowCount}<br>";
 
 if ($minTs === null || $maxTs === null) {
   echo "No valid dates found.";
