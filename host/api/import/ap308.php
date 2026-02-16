@@ -183,4 +183,42 @@ try {
 } finally {
   fclose($fh);
 }
-echo "uploaded";
+// -------[ We are now uploaded]
+function open_csv(string $absPath): SplFileObject {
+  if (!is_file($absPath)) {
+    echo "CSV not found";
+    exit;
+  }
+  if (!is_readable($absPath)) {
+    echo "CSV not readable";
+    exit;
+  }
+
+  $size = filesize($absPath);
+  $f = new SplFileObject($absPath, 'rb');
+  $f->setFlags(SplFileObject::READ_CSV | SplFileObject::SKIP_EMPTY);
+  return $f;
+}
+
+$csv = open_csv($absolutePath);
+$csv->rewind();
+$headerRow = $csv->fgetcsv();
+if (!is_array($headerRow)) {
+  echo "Failed to read CSV header.";
+  exit;
+}
+$header = array_map(
+  fn($v) => is_string($v) ? trim($v) : (is_null($v) ? '' : (string)$v),
+  $headerRow
+);
+$colCount = count($header);
+$rowCount = 0;
+$preview = [];
+while (!$csv->eof()) {
+  $row = $csv->fgetcsv();
+  if (!is_array($row)) continue;
+  $rowCount++;
+}
+
+echo "uploaded<br>";
+echo "Rows: $rowCount";
