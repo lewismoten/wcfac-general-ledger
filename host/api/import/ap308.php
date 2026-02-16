@@ -1,0 +1,173 @@
+<?php
+declare(strict_types=1);
+
+
+$config = require __DIR__ . "/../config.php";
+
+$file_settings = $config["files"];
+
+$MAX_BYTES = $file_settings["max_mb"] * 1024 * 1024;
+$UPLOAD_DIR = __DIR__ . "/../" . $file_settings['dir'];
+$INDEX_PATH = $UPLOAD_DIR . '/index.json';
+
+function ensure_dir(string $dir): void {
+  if (!is_dir($dir)) {
+    if (!mkdir($dir, 0750, true) && !is_dir($dir)) {
+      echo "Failed to create directory: $dir";
+      exit;
+    }
+  }
+  if(!is_writable($dir)) {
+    echo "Server error: uploads directory not writable.";
+    exit;
+  }
+}
+
+ensure_dir($UPLOAD_DIR);
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+  echo "Method not supported";
+  exit;
+}
+if (!isset($_FILES['csv']) || !is_array($_FILES['csv'])) {
+  echo "No file uploaded.";
+  exit;
+}
+
+$f = $_FILES['csv'];
+
+if(($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+  echo "Upload failed (error code: " . (int)$f['error'] . ").";
+  exit;
+}
+
+$size = (int)($f['size'] ?? 0);
+if ($size <= 0) {
+  echo "Uploaded file is empty.";
+  exit;
+}
+
+if ($size > $MAX_BYTES) {
+  echo "File too large. Max is " . ($MAX_BYTES / 1024 / 1024) . "MB.";
+  exit;
+}
+
+$tmpPath = (string)($f['tmp_name'] ?? '');
+if ($tmpPath === '' || !is_uploaded_file($tmpPath)) {
+  echo "Invalid upload.";
+  exit;
+}
+
+function safe_original_name(string $name): string {
+  $base = basename($name);
+  $base = preg_replace('/[^\w.\- ]+/u', '_', $base) ?? 'upload.csv';
+  $base = trim($base);
+  return $base !== '' ? $base : 'upload.csv';
+}
+
+function random_id(int $bytes = 8): string {
+  return bin2hex(random_bytes($bytes)); // 16 hex chars for 8 bytes
+}
+function read_index_locked(string $indexPath, $fh): array {
+  clearstatcache(true, $indexPath);
+  $size = filesize($indexPath);
+  if ($size === false || $size === 0) return [];
+
+  rewind($fh);
+  $json = stream_get_contents($fh);
+  if ($json === false || trim($json) === '') return [];
+
+  $data = json_decode($json, true);
+  return is_array($data) ? $data : [];
+}
+
+function write_index_locked($fh, array $data): void {
+  $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+  if ($json === false) {
+    echo "Failed to encode index.json";
+    exit;
+  }
+  rewind($fh);
+  if (!ftruncate($fh, 0)) {
+    echo "Failed to truncate index.json";
+    exit;
+  }
+  if (fwrite($fh, $json . "\n") === false) {
+    echo "Failed to write index.json";
+    exit;
+  }
+  fflush($fh);
+}
+
+$origName = safe_original_name((string)($f['name'] ?? 'upload.csv'));
+$ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+if ($ext !== 'csv') $errors[] = "File must have a .csv extension.";
+if (function_exists('finfo_open') && $tmpPath !== '' && is_file($tmpPath)) {
+  $fi = finfo_open(FILEINFO_MIME_TYPE);
+  if ($fi) {
+    $mime = (string)finfo_file($fi, $tmpPath);
+    finfo_close($fi);
+    $allowed = ['text/plain','text/csv','application/csv','application/vnd.ms-excel'];
+    if ($mime !== '' && !in_array($mime, $allowed, true)) {
+      echo "Unexpected file type ($mime). Please upload a CSV.";
+      exit;
+    }
+  }
+}
+
+$now = new DateTimeImmutable('now', new DateTimeZone('America/New_York')); // change if you want server tz
+$year = $now->format('Y');
+$folder = $UPLOAD_DIR . DIRECTORY_SEPARATOR . $year;
+ensure_dir($folder);
+$stampForName = $now->format('Y-m-d His');   // YYYY-MM-DD HHMMSS (no colon)
+$uploadedTs   = $now->format('Y-m-d H:i:s'); // for index "uploaded" field
+$rid = random_id(8);
+$finalFileName = sprintf('%s %s.csv', $stampForName, $rid);
+$relativePath = $year . '/' . $finalFileName;
+$absolutePath = $folder . DIRECTORY_SEPARATOR . $finalFileName;
+
+if (!move_uploaded_file($tmpPath, $absolutePath)) {
+  echo "Failed to save uploaded file.";
+  exit;
+}
+@chmod($absolutePath, 0640);
+$sha256 = hash_file('sha256', $absolutePath);
+if ($sha256 === false) {
+  @unlink($absolutePath);
+  echo "Failed to compute sha256.";
+  exit;
+}
+if (!file_exists($INDEX_PATH)) {
+  $init = @file_put_contents($INDEX_PATH, "[]\n", LOCK_EX);
+  if ($init === false) {
+    echo "Failed to initialize index.json";
+    exit;
+  }
+  @chmod($INDEX_PATH, 0640);
+}
+$fh = fopen($INDEX_PATH, 'c+');
+if ($fh === false) {
+  @unlink($absolutePath);
+  echo "Failed to open index.json";
+  exit;
+}
+try {
+  if (!flock($fh, LOCK_EX)) {
+    @unlink($absolutePath);
+    throw new RuntimeException("Failed to lock index.json");
+  }
+  $index = read_index_locked($INDEX_PATH, $fh);
+  $index[] = [
+    'path'     => $relativePath,
+    'name'     => $origName,
+    'type'     => 'ap308',
+    'hash'     => $sha256,
+    'size'     => $size,
+    'uploaded' => $uploadedTs,
+  ];
+  write_index_locked($fh, $index);
+  flock($fh, LOCK_UN);
+} finally {
+  fclose($fh);
+}
+echo "uploaded";
