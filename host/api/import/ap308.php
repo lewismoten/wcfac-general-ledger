@@ -230,7 +230,9 @@ $header = array_map(
 $colCount = count($header);
 $rowCount = 0;
 $rowNumber = 0;
-$preview = [];
+$minTs = null;
+$maxTs = null;
+
 while (!$csv->eof()) {
   $row = $csv->fgetcsv();
   if (!is_array($row)) continue;
@@ -247,12 +249,39 @@ while (!$csv->eof()) {
   if(in_array($value, $allowedNonDigitTokens, true)) continue;
   if($value === '') continue;
   if (!ctype_digit($value)) {
-    echo "File appears corrupted at row ${rowNumber}.";
+    echo "File appears corrupted at row ${rowNumber}: Invalid P/O NO.";
     exit;
   }
+
+  $checkDate = trim((string)($row[9] ??'')); // 8/21/2013
+  if($checkDate === '') {
+    echo "File appears corrupted at row ${rowNumber}: Invalid date";
+    exit;
+  }
+  $dt = DateTimeImmutable::createFromFormat('n/j/Y', $checkDate);
+  $errs = DateTimeImmutable::getLastErrors();
+  if ($dt === false || ($errs['warning_count'] ?? 0) > 0 || ($errs['error_count'] ?? 0) > 0) {
+    echo "Invalid date in row {$rowNumber}, column 10: " . htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8');
+    exit;
+  }
+  $dt = $dt->setTime(0, 0, 0);
+  $ts = $dt->getTimestamp();
+  $minTs = ($minTs === null) ? $ts : min($minTs, $ts);
+  $maxTs = ($maxTs === null) ? $ts : max($maxTs, $ts);
 
   $rowCount++;
 }
 
 echo "uploaded<br>";
-echo "Rows: $rowCount";
+echo "Rows: ${rowCoun}t<br>";
+
+if ($minTs === null || $maxTs === null) {
+  echo "No valid dates found.";
+  exit;
+}
+
+$minDate = (new DateTimeImmutable('@' . $minTs))->setTimezone(new DateTimeZone('America/New_York'))->format('Y-m-d');
+$maxDate = (new DateTimeImmutable('@' . $maxTs))->setTimezone(new DateTimeZone('America/New_York'))->format('Y-m-d');
+
+echo "Min date: {$minDate}<br>";
+echo "Max date: {$maxDate}<br>";
