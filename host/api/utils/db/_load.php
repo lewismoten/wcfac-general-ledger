@@ -8,3 +8,4 @@ require_once __DIR__ . '/mysqli.php';
 require_once __DIR__ . '/connect.php';
 require_once __DIR__ . '/sql.php';
 require_once __DIR__ . '/nullable.php';
+require_once __DIR__ . '/bind_param_array.php';

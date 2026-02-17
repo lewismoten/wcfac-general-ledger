@@ -1,5 +1,6 @@
 INSERT INTO
-  LEDGER (
+  LEDGER_STAGE (
+    STAGE_ID,
     PURCHASE_ORDER,
     VENDOR_NO,
     VENDOR_NAME,
@@ -24,6 +25,7 @@ INSERT INTO
   )
 VALUES
   (
+    ?,
     ?,
     ?,
     ?,

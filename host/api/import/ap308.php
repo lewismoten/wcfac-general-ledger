@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../utils/bootstrap.php';
 
+$sqlFolder = 'ap308_import';
+
 $config = require __DIR__ . "/../config.php";
 
 $file_settings = $config["files"];
@@ -160,8 +162,17 @@ $maxPaid = null;
 
 $corruptedCount = 0;
 
-$sql = sql('ap308_import', 'ledger');
-$types = 'iisss'.'sssii'.'iiiii'.'ssiss'.'i';
+$conn = db_connect($config["db"]);
+
+$stageSql = sql($sqlFolder, '1. Stage Ledger');
+$types = 'iiissssssiiiiiiississi';
+$stageStmt = $conn->prepare($stageSql);
+if (!$stageStmt) {
+  echo "Prepare failed (ensure_observed): " . $conn->error;
+  exit;
+}
+
+$stageId = time();
 
 while (!$csv->eof()) {
   if($corruptedCount>=10) break;
@@ -217,9 +228,9 @@ while (!$csv->eof()) {
   // 4: Invoice Number
   $invoiceNo = trim((string)($row[3] ?? ''));
   if($invoiceNo === '') {
-    $corruptedCount++;
+    // $corruptedCount++;
     echo "<li>Row ${rowNumber}: Missing Invoice Number.</li>";
-    continue;
+    // continue;
   }
   $invoiceParts = explode('-', preg_replace('/[-\s]+/', '-', $invoiceNo));
   $invoiceParts = array_pad($invoiceParts, 3, '');
@@ -237,11 +248,15 @@ while (!$csv->eof()) {
   $invoiceDate = DateTimeImmutable::createFromFormat('n/j/Y', $invoiceDateStr);
   $errs = DateTimeImmutable::getLastErrors();
   if ($invoiceDate === false || ($errs['warning_count'] ?? 0) > 0 || ($errs['error_count'] ?? 0) > 0) {
-    $corruptedCount++;
+    // $corruptedCount++;
+    // One was "/0000" in AP Report 2013-2014.csv
     echo "<li>Row ${rowNumber}: Invoice Date Invalid \"" . htmlspecialchars($invoiceDateStr, ENT_QUOTES, 'UTF-8')."\"</li>";
-    continue;
+    // continue;
+    $invoiceDate = DateTimeImmutable::createFromFormat('n/j/Y', '1/1/0000');
+    // $invoiceDate = null;
+  } else {
+    $invoiceDate = $invoiceDate->setTime(0, 0, 0);
   }
-  $invoiceDate = $invoiceDate->setTime(0, 0, 0);
 
   // 6: Account No
   $account = (string)($row[5] ?? '');
@@ -297,6 +312,7 @@ while (!$csv->eof()) {
     echo "<li>Row ${rowNumber}: Account Paid invalid month \"" . htmlspecialchars($paidStr, ENT_QUOTES, 'UTF-8')."\"</li>";
     continue;
   }
+  $paidMonthStr = str_pad((string)$paidMonthInt, 2, '0', STR_PAD_LEFT);
   $ymInt = ($paidYearInt * 100) + $paidMonthInt;
   $minPaid = ($minPaid === null) ? $ymInt : min($minPaid, $ymInt);
   $maxPaid = ($maxPaid === null) ? $ymInt : max($maxPaid, $ymInt);
@@ -308,7 +324,7 @@ while (!$csv->eof()) {
     echo "<li>Row ${rowNumber}: Net Amount Missing</li>";
     continue;
   }
-  if (!preg_match('/^-?\d+(?:\.\d{1,2})?$/', $netRaw)) {
+  if (!preg_match('/^-?(\d+(?:\.\d{1,2})?|\.\d{1,2})$/', $netRaw)) {
     $corruptedCount++;
     echo "<li>Row ${rowNumber}: Net Amount Invalid \"" . htmlspecialchars($netRaw, ENT_QUOTES, 'UTF-8')."\"</li>";
     continue;
@@ -365,8 +381,8 @@ while (!$csv->eof()) {
     echo "<li>Row ${rowNumber}: Invalid Batch \"" . htmlspecialchars($batch, ENT_QUOTES, 'UTF-8')."\"</li>";
     continue;
   }
-    $paidMonthStr = str_pad((string)$paidMonthInt, 2, '0', STR_PAD_LEFT);
     $params = [
+      $stageId,
       nullable_int($po),
       nullable_int($vendorNo),
       nullable_str($vendorName),
@@ -375,7 +391,7 @@ while (!$csv->eof()) {
 
       nullable_str($invoiceNo2),
       nullable_str($invoiceNo3),
-      nullable_dte($invoiceDate->format('Y-m-d')),
+      nullable_dte($invoiceDate === null ? null : $invoiceDate->format('Y-m-d')),
       nullable_int($accountRe),
       nullable_int($ol1),
 
@@ -393,8 +409,18 @@ while (!$csv->eof()) {
 
       nullable_int($batch)
     ];
-    // TODO: Run against database
+
+    if(!bind_param_array($stageStmt, $types, $params)) {
+      echo "Bind failed: " . htmlspecialchars($stageStmt->error, ENT_QUOTES, 'UTF-8');
+      exit;
+    }
+    if (!$stageStmt->execute()) {
+      echo 'Insert failed: ' . $stageStmt->error;
+      exit;
+    }
+
 }
+$stageStmt->close();
 
 if($corruptedCount > 0) {
   echo "File appears corrupted.<br>";
@@ -418,6 +444,88 @@ if ($minPaid !== null) {
 
   echo "Account Paid Min: {$minPaidStr}<br>";
   echo "Account Paid Max: {$maxPaidStr}<br>";
+}
+
+$conn->begin_transaction();
+try {
+  // 2. Add new vendors
+  $addVendorsSql = sql($sqlFolder, '2. Add New Vendors');
+  $addVendorsStmt = $conn->prepare($addVendorsSql);
+  if (!$addVendorsStmt) {
+    echo "Prepare failed (add new vendors): " . $conn->error;
+    exit;
+  }
+  $addVendorsStmt->bind_param('i', $stageId);
+  if (!$addVendorsStmt->execute()) {
+    echo 'Add new vendors failed: ' . $addVendorsStmt->error;
+    $addVendorsStmt->close();
+    exit;
+  }
+  $addVendorsStmt->close();
+
+  // 3. Get Date Range
+  $getDateRangeSql = sql($sqlFolder, '3. Get Date Range');
+  $getDateRangeStmt = $conn->prepare($getDateRangeSql);
+  if (!$getDateRangeStmt) {
+    echo "Prepare failed (get date range): " . $conn->error;
+    exit;
+  }
+  $getDateRangeStmt->bind_param('i', $stageId);
+  if (!$getDateRangeStmt->execute()) {
+    echo 'Get date range failed: ' . $getDateRangeStmt->error;
+    $getDateRangeStmt->close();
+    exit;
+  }
+  $getDateRangeStmt->bind_result($minDate, $maxDate);
+  if (!$getDateRangeStmt->fetch()) {
+    echo "Failed to fetch date range.";
+    $getDateRangeStmt->close();
+    exit;
+  }
+  $getDateRangeStmt->close();
+
+
+  // 4. Clear Ledger Range
+  $clearLegerRangeSql = sql($sqlFolder, '4. Clear Ledger Range');
+  $clearLegerRangeStmt = $conn->prepare($clearLegerRangeSql);
+  if (!$clearLegerRangeStmt) {
+    echo "Prepare failed (clear ledger range): " . $conn->error;
+    exit;
+  }
+  $clearLegerRangeStmt->bind_param('ss', $minDate, $maxDate);
+  if (!$clearLegerRangeStmt->execute()) {
+    echo 'Clear ledger range failed: ' . $clearLegerRangeStmt->error;
+    $clearLegerRangeStmt->close();
+    exit;
+  }
+  $clearLegerRangeStmt->close();
+
+  // 5. Add Stage to Ledger
+  $addStageToLedgerSql = sql($sqlFolder, '5. Add Stage to Ledger');
+  $addStageToLedgerStmt = $conn->prepare($addStageToLedgerSql);
+  if (!$addStageToLedgerStmt) {
+    echo "Prepare failed (Add Stage to Ledger): " . $conn->error;
+    exit;
+  }
+  $addStageToLedgerStmt->bind_param('i', $stageId);
+  if (!$addStageToLedgerStmt->execute()) {
+    echo 'Add Stage to Ledger failed: ' . $addStageToLedgerStmt->error;
+    $addStageToLedgerStmt->close();
+    exit;
+  }
+  $addStageToLedgerStmt->close();
+  $conn->commit();
+  echo "<hr>Success.</hr>";
+} catch (Throwable $e) {
+  echo "<hr>Failed.</hr>";
+  echo "<pre>";
+  echo "Message: " . $e->getMessage() . "\n";
+  echo "File: " . $e->getFile() . "\n";
+  echo "Line: " . $e->getLine() . "\n";
+  echo "Trace:\n" . $e->getTraceAsString();
+  echo "</pre>";
+
+  $conn->rollback();
 }
 // AP Reports exported by Fiscal Year (ACCT PD)
 // AP Report 2013-2014.csv 2.6MB Paid: Jul'13-Jun'14 Checks: 2012-09-19 to 2014-10-22 [15,396]

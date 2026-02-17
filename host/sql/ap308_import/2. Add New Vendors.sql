@@ -1,0 +1,18 @@
+INSERT INTO
+  VENDOR (Name, Num)
+SELECT DISTINCT
+  ls.VENDOR_NAME,
+  ls.VENDOR_NO
+FROM
+  LEDGER_STAGE ls
+WHERE
+  ls.STAGE_ID = ?
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      VENDOR v
+    WHERE
+      v.Name = ls.VENDOR_NAME
+      AND v.Num = ls.VENDOR_NO
+  )
