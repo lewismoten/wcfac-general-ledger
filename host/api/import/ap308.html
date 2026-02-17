@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AP308 CSV Import</title>
+</head>
+<body>
+    <h1>Upload CSV</h1>
+    <form action="./ap308.php" method="post" enctype="multipart/form-data" autocomplete="off">
+      <label for="csv">CSV File</label>
+      <input id="csv" name="csv" type="file" accept=".csv,text/csv" required>
+      <button type="submit">Upload</button>
+    </form>
+    Note: CSV files are exported from the AP308 system.
+</body>
+</html>

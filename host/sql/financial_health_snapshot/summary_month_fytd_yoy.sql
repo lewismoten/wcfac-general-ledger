@@ -2,8 +2,8 @@ SELECT
   CAST(
     SUM(
       CASE
-        WHEN CHECK_DATE >= ?
-        AND CHECK_DATE < ? THEN NET_AMOUNT
+        WHEN ACCOUNT_PAID >= ?
+        AND ACCOUNT_PAID < ? THEN NET_AMOUNT
         ELSE 0
       END
     ) * 100 AS SIGNED
@@ -11,8 +11,8 @@ SELECT
   CAST(
     SUM(
       CASE
-        WHEN CHECK_DATE >= ?
-        AND CHECK_DATE < ?
+        WHEN ACCOUNT_PAID >= ?
+        AND ACCOUNT_PAID < ?
         AND NET_AMOUNT > 0 THEN NET_AMOUNT
         ELSE 0
       END
@@ -21,8 +21,8 @@ SELECT
   CAST(
     SUM(
       CASE
-        WHEN CHECK_DATE >= ?
-        AND CHECK_DATE < ? THEN NET_AMOUNT
+        WHEN ACCOUNT_PAID >= ?
+        AND ACCOUNT_PAID < ? THEN NET_AMOUNT
         ELSE 0
       END
     ) * 100 AS SIGNED
@@ -30,8 +30,8 @@ SELECT
   CAST(
     SUM(
       CASE
-        WHEN CHECK_DATE >= ?
-        AND CHECK_DATE < ?
+        WHEN ACCOUNT_PAID >= ?
+        AND ACCOUNT_PAID < ?
         AND NET_AMOUNT > 0 THEN NET_AMOUNT
         ELSE 0
       END
@@ -40,8 +40,8 @@ SELECT
   CAST(
     SUM(
       CASE
-        WHEN CHECK_DATE >= ?
-        AND CHECK_DATE < ? THEN NET_AMOUNT
+        WHEN ACCOUNT_PAID >= ?
+        AND ACCOUNT_PAID < ? THEN NET_AMOUNT
         ELSE 0
       END
     ) * 100 AS SIGNED
@@ -49,8 +49,8 @@ SELECT
   CAST(
     SUM(
       CASE
-        WHEN CHECK_DATE >= ?
-        AND CHECK_DATE < ?
+        WHEN ACCOUNT_PAID >= ?
+        AND ACCOUNT_PAID < ?
         AND NET_AMOUNT > 0 THEN NET_AMOUNT
         ELSE 0
       END
@@ -59,8 +59,8 @@ SELECT
   CAST(
     SUM(
       CASE
-        WHEN CHECK_DATE >= ?
-        AND CHECK_DATE < ? THEN NET_AMOUNT
+        WHEN ACCOUNT_PAID >= ?
+        AND ACCOUNT_PAID < ? THEN NET_AMOUNT
         ELSE 0
       END
     ) * 100 AS SIGNED
@@ -68,8 +68,8 @@ SELECT
   CAST(
     SUM(
       CASE
-        WHEN CHECK_DATE >= ?
-        AND CHECK_DATE < ?
+        WHEN ACCOUNT_PAID >= ?
+        AND ACCOUNT_PAID < ?
         AND NET_AMOUNT > 0 THEN NET_AMOUNT
         ELSE 0
       END
@@ -79,5 +79,5 @@ FROM
   LEDGER
 WHERE
   ACCOUNT_RE = 4
-  AND CHECK_DATE >= ?
-  AND CHECK_DATE < ?
+  AND ACCOUNT_PAID >= ?
+  AND ACCOUNT_PAID < ?

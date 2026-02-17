@@ -3,10 +3,23 @@ import { FinancialHealthSnapshot } from './FinancialHealthSnapshot/FinancialHeal
 import { AppBar, Toolbar, Tabs, Tab, Box, Typography } from '@mui/material';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { DepartmentFunctionSummary } from "./DepartmentFunctionSummary/DepartmentFunctionSummary";
+import { VendorConcentrationLargePayments } from "./VendorConcentrationLargePayments/VendorConcentrationLargePayments";
 
 export default function App() {
   const location = useLocation();
-  const currentTab = location.pathname === '/financial-health-snapshot' ? 1 : 0;
+
+  const tabPaths = [
+    "/ledger",
+    "/financial-health-snapshot",
+    "/department-function-summary",
+    "/vendor-concentration-large-payments",
+  ];
+
+  const currentTab = (() => {
+    const p = location.pathname === "/" ? "/ledger" : location.pathname;
+    const idx = tabPaths.findIndex((x) => p.startsWith(x));
+    return idx === -1 ? 0 : idx;
+  })();
 
   return (
     <Box sx={{ 
@@ -40,6 +53,11 @@ export default function App() {
               component={Link}
               to="/department-function-summary"
             />
+            <Tab
+              label="Vendors"
+              component={Link}
+              to="/vendor-concentration-large-payments"
+            />
           </Tabs>
         </Toolbar>
       </AppBar>
@@ -55,6 +73,7 @@ export default function App() {
           <Route path="/ledger" element={<LedgerPage />} />
           <Route path="/financial-health-snapshot" element={<FinancialHealthSnapshot />} />
           <Route path="/department-function-summary" element={<DepartmentFunctionSummary />} />
+          <Route path="/vendor-concentration-large-payments" element={<VendorConcentrationLargePayments />} />
         </Routes>
       </Box>
     </Box>
