@@ -12,3 +12,4 @@ require_once __DIR__ . '/output/csv.php';
 require_once __DIR__ . '/params/sentinels.php';
 require_once __DIR__ . '/params/filters.php';
 require_once __DIR__ . '/arrays.php';
+require_once __DIR__ . '/files/_load.php';

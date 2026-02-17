@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../utils/bootstrap.php';
 
 $config = require __DIR__ . "/../config.php";
 
@@ -9,19 +10,6 @@ $file_settings = $config["files"];
 $MAX_BYTES = $file_settings["max_mb"] * 1024 * 1024;
 $UPLOAD_DIR = __DIR__ . "/../" . $file_settings['dir'];
 $INDEX_PATH = $UPLOAD_DIR . '/index.json';
-
-function ensure_dir(string $dir): void {
-  if (!is_dir($dir)) {
-    if (!mkdir($dir, 0750, true) && !is_dir($dir)) {
-      echo "Failed to create directory: $dir";
-      exit;
-    }
-  }
-  if(!is_writable($dir)) {
-    echo "Server error: uploads directory not writable.";
-    exit;
-  }
-}
 
 ensure_dir($UPLOAD_DIR);
 
@@ -58,50 +46,12 @@ if ($tmpPath === '' || !is_uploaded_file($tmpPath)) {
   exit;
 }
 
-function safe_original_name(string $name): string {
-  $base = basename($name);
-  $base = preg_replace('/[^\w.\- ]+/u', '_', $base) ?? 'upload.csv';
-  $base = trim($base);
-  return $base !== '' ? $base : 'upload.csv';
-}
-
-function random_id(int $bytes = 8): string {
-  return bin2hex(random_bytes($bytes)); // 16 hex chars for 8 bytes
-}
-function read_index_locked(string $indexPath, $fh): array {
-  clearstatcache(true, $indexPath);
-  $size = filesize($indexPath);
-  if ($size === false || $size === 0) return [];
-
-  rewind($fh);
-  $json = stream_get_contents($fh);
-  if ($json === false || trim($json) === '') return [];
-
-  $data = json_decode($json, true);
-  return is_array($data) ? $data : [];
-}
-
-function write_index_locked($fh, array $data): void {
-  $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-  if ($json === false) {
-    echo "Failed to encode index.json";
-    exit;
-  }
-  rewind($fh);
-  if (!ftruncate($fh, 0)) {
-    echo "Failed to truncate index.json";
-    exit;
-  }
-  if (fwrite($fh, $json . "\n") === false) {
-    echo "Failed to write index.json";
-    exit;
-  }
-  fflush($fh);
-}
-
-$origName = safe_original_name((string)($f['name'] ?? 'upload.csv'));
+$origName = safe_original_name((string)($f['name'] ?? 'upload.csv'), 'upload.csv');
 $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
-if ($ext !== 'csv') $errors[] = "File must have a .csv extension.";
+if ($ext !== 'csv') {
+  echo "File must have a .csv extension.";
+  exit;
+} 
 if (function_exists('finfo_open') && $tmpPath !== '' && is_file($tmpPath)) {
   $fi = finfo_open(FILEINFO_MIME_TYPE);
   if ($fi) {
@@ -187,36 +137,6 @@ try {
 echo "uploaded<br>";
 // -------[ We are now uploaded]
 
-function open_csv(string $absPath): SplFileObject {
-  if (!is_file($absPath)) {
-    echo "CSV not found";
-    exit;
-  }
-  if (!is_readable($absPath)) {
-    echo "CSV not readable";
-    exit;
-  }
-
-  $size = filesize($absPath);
-  $f = new SplFileObject($absPath, 'rb');
-  $f->setFlags(SplFileObject::READ_CSV | SplFileObject::SKIP_EMPTY);
-  return $f;
-}
-
-$headers = [
-  'PO NO.',
-  'VEND. NO.',
-  'VENDOR NAME',
-  'INVOICE NO.',
-  'INVOICE DATE',
-  'ACCOUNT NO.',
-  'ACCT PD',
-  'NET AMOUNT',
-  'CHECK NO.',
-  'CHECK DATE',
-  'DESCRIPTION',
-  'BATCH',
-];
 $allowedNonDigitTokens = ['AP308', 'P/O', 'NO.'];
 
 $csv = open_csv($absolutePath);
@@ -239,6 +159,9 @@ $minPaid = null;
 $maxPaid = null;
 
 $corruptedCount = 0;
+
+$sql = sql('ap308_import', 'ledger');
+$types = 'iisss'.'sssii'.'iiiii'.'ssiss'.'i';
 
 while (!$csv->eof()) {
   if($corruptedCount>=10) break;
@@ -298,6 +221,11 @@ while (!$csv->eof()) {
     echo "<li>Row ${rowNumber}: Missing Invoice Number.</li>";
     continue;
   }
+  $invoiceParts = explode('-', preg_replace('/[-\s]+/', '-', $invoiceNo));
+  $invoiceParts = array_pad($invoiceParts, 3, '');
+  $invoiceNo1 = $invoiceParts[0];
+  $invoiceNo2 = $invoiceParts[1];
+  $invoiceNo3 = $invoiceParts[2];
 
   // 5: Invoice Date
   $invoiceDateStr = trim((string)($row[4] ??''));
@@ -310,11 +238,10 @@ while (!$csv->eof()) {
   $errs = DateTimeImmutable::getLastErrors();
   if ($invoiceDate === false || ($errs['warning_count'] ?? 0) > 0 || ($errs['error_count'] ?? 0) > 0) {
     $corruptedCount++;
-    echo "<li>Row ${rowNumber}: Invoice Date Invalid \"" . htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8')."\"</li>";
+    echo "<li>Row ${rowNumber}: Invoice Date Invalid \"" . htmlspecialchars($invoiceDateStr, ENT_QUOTES, 'UTF-8')."\"</li>";
     continue;
   }
   $invoiceDate = $invoiceDate->setTime(0, 0, 0);
-  $invoiceDateTs = $invoiceDate->getTimestamp();
 
   // 6: Account No
   $account = (string)($row[5] ?? '');
@@ -332,12 +259,23 @@ while (!$csv->eof()) {
     echo "<li>Row {$rowNumber}: Account No Invliad \"" . htmlspecialchars($account, ENT_QUOTES, 'UTF-8')."\"</li>";
     continue;
   }
+  $firstPadded = str_pad($parts[1], 4, '0', STR_PAD_LEFT);
+  $accountRe = (int)$firstPadded[0];
+
   $account_fund = $parts[1];//1-7
   $account_dep = $parts[2];//6
-  $account_obj = $parts[3];//4
-  $account_project = $parts[4];//0-3
-  $account_sub1 = $parts[5];//0-3
-  $account_sub2 = $parts[6];//0-3
+  $account_no = $parts[3];//4
+  $account_project = $parts[4] ?? '';//0-3
+  $account_sub1 = $parts[5] ?? '';//0-3
+  $account_sub2 = $parts[6] ?? '';//0-3
+
+  $ol1 = $ol1Func = $ol2 = null;
+  if($accountRe === 4) {
+    $major = str_pad((string)$account_fund, 5, '0', STR_PAD_LEFT);
+    $ol1 = (int)($major[0] ?? 0);
+    $ol1Func = (int)($major[1] ?? 0);
+    $ol2 = (int)($major[2] ?? 0);
+  }
 
   // 7: Account Paid
   $paidStr = trim((string)($row[6] ?? ''));
@@ -351,14 +289,15 @@ while (!$csv->eof()) {
     echo "<li>Row ${rowNumber}: Account Paid Invalid \"" . htmlspecialchars($paidStr, ENT_QUOTES, 'UTF-8')."\"</li>";
     continue;
   }
-  [$year, $month] = explode('/', $paidStr);
-  $monthInt = (int)$month;
-  if ($monthInt < 1 || $monthInt > 12) {
+  [$paidYear, $paidMonth] = explode('/', $paidStr);
+  $paidYearInt = (int)$paidYear;
+  $paidMonthInt = (int)$paidMonth;
+  if ($paidMonthInt < 1 || $paidMonthInt > 12) {
     $corruptedCount++;
     echo "<li>Row ${rowNumber}: Account Paid invalid month \"" . htmlspecialchars($paidStr, ENT_QUOTES, 'UTF-8')."\"</li>";
     continue;
   }
-  $ymInt = ((int)$year) * 100 + $monthInt;
+  $ymInt = ($paidYearInt * 100) + $paidMonthInt;
   $minPaid = ($minPaid === null) ? $ymInt : min($minPaid, $ymInt);
   $maxPaid = ($maxPaid === null) ? $ymInt : max($maxPaid, $ymInt);
 
@@ -398,7 +337,7 @@ while (!$csv->eof()) {
   $errs = DateTimeImmutable::getLastErrors();
   if ($checkDate === false || ($errs['warning_count'] ?? 0) > 0 || ($errs['error_count'] ?? 0) > 0) {
     $corruptedCount++;
-    echo "<li>Row ${rowNumber}: Check Date Invalid \"" . htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8')."\"</li>";
+    echo "<li>Row ${rowNumber}: Check Date Invalid \"" . htmlspecialchars($checkDateString, ENT_QUOTES, 'UTF-8')."\"</li>";
     continue;
   }
   $checkDate = $checkDate->setTime(0, 0, 0);
@@ -426,6 +365,35 @@ while (!$csv->eof()) {
     echo "<li>Row ${rowNumber}: Invalid Batch \"" . htmlspecialchars($batch, ENT_QUOTES, 'UTF-8')."\"</li>";
     continue;
   }
+    $paidMonthStr = str_pad((string)$paidMonthInt, 2, '0', STR_PAD_LEFT);
+    $params = [
+      nullable_int($po),
+      nullable_int($vendorNo),
+      nullable_str($vendorName),
+      nullable_str($invoiceNo),
+      nullable_str($invoiceNo1),
+
+      nullable_str($invoiceNo2),
+      nullable_str($invoiceNo3),
+      nullable_dte($invoiceDate->format('Y-m-d')),
+      nullable_int($accountRe),
+      nullable_int($ol1),
+
+      nullable_int($ol1Func),
+      nullable_int($ol2),
+      nullable_int($account_fund),
+      nullable_int($account_dep),
+      nullable_int($account_no),
+
+      nullable_dte("${paidYearInt}-${paidMonthStr}-01"),
+      nullable_mny($netRaw),
+      nullable_int($checkNo),
+      nullable_dte($checkDate->format('Y-m-d')),
+      nullable_str($description),
+
+      nullable_int($batch)
+    ];
+    // TODO: Run against database
 }
 
 if($corruptedCount > 0) {
