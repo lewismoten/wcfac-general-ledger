@@ -17,8 +17,8 @@ FROM
       INNER JOIN VENDOR ven ON ven.ID = l.VENDOR_ID
     WHERE
       l.ACCOUNT_RE = 4
-      AND l.CHECK_DATE >= ?
-      AND l.CHECK_DATE < ?
+      AND l.ACCOUNT_PAID >= ?
+      AND l.ACCOUNT_PAID < ?
       AND l.NET_AMOUNT > 0
     GROUP BY
       ven.ID,
@@ -35,8 +35,8 @@ FROM
       LEDGER l
     WHERE
       l.ACCOUNT_RE = 4
-      AND l.CHECK_DATE >= ?
-      AND l.CHECK_DATE < ?
+      AND l.ACCOUNT_PAID >= ?
+      AND l.ACCOUNT_PAID < ?
       AND l.NET_AMOUNT > 0
   ) t
 ORDER BY

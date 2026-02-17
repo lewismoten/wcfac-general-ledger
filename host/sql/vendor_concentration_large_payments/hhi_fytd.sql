@@ -20,14 +20,14 @@ FROM
           LEDGER l2
         WHERE
           l2.ACCOUNT_RE = 4
-          AND l2.CHECK_DATE >= ?
-          AND l2.CHECK_DATE < ?
+          AND l2.ACCOUNT_PAID >= ?
+          AND l2.ACCOUNT_PAID < ?
           AND l2.NET_AMOUNT > 0
       ) t
     WHERE
       l.ACCOUNT_RE = 4
-      AND l.CHECK_DATE >= ?
-      AND l.CHECK_DATE < ?
+      AND l.ACCOUNT_PAID >= ?
+      AND l.ACCOUNT_PAID < ?
       AND l.NET_AMOUNT > 0
     GROUP BY
       l.VENDOR_ID
@@ -39,7 +39,7 @@ FROM
       LEDGER l
     WHERE
       l.ACCOUNT_RE = 4
-      AND l.CHECK_DATE >= ?
-      AND l.CHECK_DATE < ?
+      AND l.ACCOUNT_PAID >= ?
+      AND l.ACCOUNT_PAID < ?
       AND l.NET_AMOUNT > 0
   ) t;

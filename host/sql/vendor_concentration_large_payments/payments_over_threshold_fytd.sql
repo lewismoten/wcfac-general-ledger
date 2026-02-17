@@ -2,7 +2,7 @@ SELECT
   ven.ID AS vendor_id,
   ven.Name AS vendor,
   CAST(l.NET_AMOUNT * 100 AS SIGNED) AS amount_cents,
-  l.CHECK_DATE AS `date`,
+  l.ACCOUNT_PAID AS `date`,
   l.ACCOUNT_DEPT AS dept_id,
   COA_DEPT.Name AS dept,
   l.CHECK_NO AS check_no,
@@ -13,10 +13,10 @@ FROM
   LEFT JOIN COA_DEPT ON COA_DEPT.ID = l.ACCOUNT_DEPT
 WHERE
   l.ACCOUNT_RE = 4
-  AND l.CHECK_DATE >= ?
-  AND l.CHECK_DATE < ?
+  AND l.ACCOUNT_PAID >= ?
+  AND l.ACCOUNT_PAID < ?
   AND l.NET_AMOUNT > 0
   AND l.NET_AMOUNT >= ?
 ORDER BY
   l.NET_AMOUNT DESC,
-  l.CHECK_DATE DESC;
+  l.ACCOUNT_PAID DESC;
