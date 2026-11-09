@@ -1,4 +1,19 @@
-# Chart of Accounts
+# WCFAC General Ledger
+
+A viewer for the Warren County Finance Audit Committee general ledger. It is a React, TypeScript and Vite app (Material UI) with reports for department and function summaries, vendor concentration and large payments, and a financial health snapshot. A PHP API and SQL scripts in `host/` serve the ledger data.
+
+```sh
+npm install
+npm start
+```
+
+Other scripts are listed in `package.json` (`npm run build`, `npm run lint`, and the data converters used below).
+
+## License
+
+ISC. See [LICENSE.md](LICENSE.md).
+
+## Chart of Accounts
 
 1. Locate all Chart of Account PDF files:
 
