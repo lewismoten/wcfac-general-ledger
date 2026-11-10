@@ -1,3 +1,5 @@
+![wcfac-general-ledger: County finance ledger viewer](docs/images/social-preview.png)
+
 # WCFAC General Ledger
 
 A viewer for the Warren County Finance Audit Committee general ledger. It is a React, TypeScript and Vite app (Material UI) with reports for department and function summaries, vendor concentration and large payments, and a financial health snapshot. A PHP API and SQL scripts in `host/` serve the ledger data.
