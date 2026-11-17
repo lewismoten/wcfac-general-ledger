@@ -12,6 +12,7 @@ $params = [];
 $medianNet = -1;
 $maxNet = 0;
 $minNet = 0;
+$count = 0; // pagination not yet implemented - $pageCount/$nextPage below are computed but unused
 
 try {
 

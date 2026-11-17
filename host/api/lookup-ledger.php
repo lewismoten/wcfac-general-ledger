@@ -74,6 +74,7 @@ $where = "WHERE $idColumn IS NOT NULL";
 $types = '';
 $params = [];
 
+$joinVendor = '';
 $filter = build_ledger_filter_clause($types, $params);
 
 if($filter != '') {
