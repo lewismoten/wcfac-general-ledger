@@ -4,7 +4,7 @@ require_once './build_ledger_filter_clause.php';
 
 json_headers();
 
-$level = $_GET['level'];
+$level = isset($_GET['level']) ? $_GET['level'] : '';
 $table = '';
 $fk = '';
 
@@ -38,7 +38,7 @@ switch($level) {
     default: 
       echo json_encode([
         "error" => "Unknown type",
-        "details" => $conn->connect_error
+        "details" => "'$level' is an unknown level"
     ]);
     exit;
 }

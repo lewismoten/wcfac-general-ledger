@@ -4,7 +4,7 @@ require_once './build_ledger_filter_clause.php';
 
 json_headers();
 
-$type = $_GET['type'];
+$type = isset($_GET['type']) ? $_GET['type'] : '';
 $table = '';
 $fk = '';
 $pad = 0;
